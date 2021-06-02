@@ -2,7 +2,7 @@
   "Import BN": {
 		"prefix": "bn",
 		"body": [
-			"import { BigNumber as BN } from 'bignumber.js';"
+			"import { BigNumber as BN } from 'bignumber';"
 		],
 		"description": "Import BigNumber as BN"
 	},
