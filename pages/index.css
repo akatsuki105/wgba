@@ -56,24 +56,6 @@ button {
   width: 60%;
 }
 
-#controls > img,
-#controls > #sound {
-  border: 0px solid var(--border-color);
-  border-top: 2px solid var(--border-top-color);
-  border-bottom: 2px solid var(--border-bottom-color);
-  border-radius: 24px;
-  padding: 8px;
-  margin: 8px;
-}
-
-.hidden {
-  opacity: 0 !important;
-}
-
-.dead {
-  display: none;
-}
-
 input[type='file'] {
   opacity: 0 !important;
   width: 0;
@@ -81,12 +63,4 @@ input[type='file'] {
   margin: 0;
   padding: 0;
   border: none;
-}
-
-#soundtoggle {
-  display: none;
-}
-
-.flex {
-  display: flex;
 }

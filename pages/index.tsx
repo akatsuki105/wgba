@@ -1,5 +1,7 @@
-import NextImage from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { Maximize } from 'components/Maximize';
+import { Pause } from 'components/Pause';
+import { Power } from 'components/Power';
 import { Sound } from 'components/Sound';
 import { GameBoyAdvance, logLvs } from 'src/gba';
 import { base64ToArrayBuffer } from 'src/utils/biosbin';
@@ -68,7 +70,6 @@ const Index = () => {
   };
 
   const screenRef = useRef<HTMLCanvasElement>(null);
-  const powerRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
@@ -103,44 +104,11 @@ const Index = () => {
       </div>
 
       <div id="controls">
-        <NextImage
-          src="/images/power.svg"
-          width="36"
-          height="36"
-          onClick={() => powerRef.current?.click()}
-        />
-        <input
-          type="file"
-          accept=".gba"
-          ref={powerRef}
-          onClick={() => isRun && powerOff()}
-          onChange={(e) => {
-            e.target.files && run(e.target.files[0]);
-          }}
-        />
+        <Power isRun={isRun} turnOn={run} turnOff={powerOff} />
 
-        {paused ? (
-          <NextImage
-            src="/images/play.svg"
-            width="36"
-            height="36"
-            onClick={() => isRun && togglePause()}
-          />
-        ) : (
-          <NextImage
-            src="/images/pause.svg"
-            width="36"
-            height="36"
-            onClick={() => isRun && togglePause()}
-          />
-        )}
+        <Pause isRun={isRun} paused={paused} toggle={togglePause} />
 
-        <NextImage
-          src="/images/maximize.svg"
-          width="36"
-          height="36"
-          onClick={() => isRun && screenRef.current?.requestFullscreen()}
-        />
+        <Maximize isRun={isRun} ref={screenRef} />
 
         {initialized && <Sound mute={mute} toggleSound={toggleSound} setVolume={setVolume} />}
       </div>
