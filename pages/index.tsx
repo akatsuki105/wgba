@@ -3,33 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { GameBoyAdvance, logLvs } from 'src/gba';
 import { base64ToArrayBuffer } from 'src/utils/biosbin';
 
-let initialized = false;
 let gba: GameBoyAdvance | null | undefined;
 let runCommands: (() => any)[] = [];
-let isRun = false;
-
-const run = (file: Blob) => {
-  if (!gba) return;
-
-  gba.loadRomFromFile(file, (result: boolean) => {
-    if (!gba) return;
-
-    if (result) {
-      isRun = true;
-
-      runCommands.forEach((cmd) => cmd());
-      runCommands = [];
-
-      console.log(gba);
-      gba.runStable();
-    }
-  });
-};
-
-const togglePause = () => {
-  if (!gba) return;
-  gba.paused ? gba.runStable() : gba.pause();
-};
 
 const setVolume = (value: number) => {
   if (!gba) return;
@@ -42,20 +17,38 @@ const setPixelated = (pixelated: boolean) => {
   if (context) context.imageSmoothingEnabled = !pixelated;
 };
 
+const powerOff = () => {
+  if (window.confirm('Quit game, OK?')) {
+    location.reload();
+  }
+};
+
 const Index = () => {
-  const screenshot = () => {
+  const [initialized, setInitialized] = useState<boolean>(false);
+
+  const [isRun, setIsRun] = useState<boolean>(false);
+  const run = (file: Blob) => {
     if (!gba) return;
 
-    const canvas = gba.indirectCanvas;
-    if (!canvas) return;
+    gba.loadRomFromFile(file, (result: boolean) => {
+      if (!gba) return;
 
-    const data = canvas.toDataURL('image/png');
+      if (result) {
+        setIsRun(true);
 
-    const image = new Image();
-    image.src = data;
+        runCommands.forEach((cmd) => cmd());
+        runCommands = [];
 
-    const w = window.open('');
-    w?.document.write(image.outerHTML);
+        gba.runStable();
+      }
+    });
+  };
+
+  const [paused, setPaused] = useState<boolean>(false);
+  const togglePause = () => {
+    if (!gba) return;
+    gba.paused ? gba.runStable() : gba.pause();
+    setPaused(gba.paused);
   };
 
   const [mute, setMute] = useState<boolean>(false);
@@ -98,9 +91,9 @@ const Index = () => {
       gba.setCanvas(canvas);
       gba.logLevel = logLvs.ERROR;
       gba.setBios(biosBin, false);
-      initialized = true;
+      setInitialized(true);
     }
-  }, [gba, screenRef.current]); // eslint-disable-line
+  }, [gba, screenRef.current, initialized]); // eslint-disable-line
 
   return (
     <div className="App">
@@ -116,40 +109,39 @@ const Index = () => {
           onClick={() => powerRef.current?.click()}
         />
         <input
-          id="loader"
           type="file"
           accept=".gba"
           ref={powerRef}
+          onClick={() => isRun && powerOff()}
           onChange={(e) => {
             e.target.files && run(e.target.files[0]);
           }}
         />
 
-        <NextImage
-          id="pause"
-          src={isRun ? '/images/play.svg' : '/images/pause.svg'}
-          width="36"
-          height="36"
-          onClick={() => isRun && togglePause()}
-        />
+        {paused ? (
+          <NextImage
+            src="/images/play.svg"
+            width="36"
+            height="36"
+            onClick={() => isRun && togglePause()}
+          />
+        ) : (
+          <NextImage
+            src="/images/pause.svg"
+            width="36"
+            height="36"
+            onClick={() => isRun && togglePause()}
+          />
+        )}
 
         <NextImage
-          id="screenshot"
-          src="/images/camera.svg"
-          width="36"
-          height="36"
-          onClick={() => isRun && screenshot()}
-        />
-
-        <NextImage
-          id="fullscreen"
           src="/images/maximize.svg"
           width="36"
           height="36"
           onClick={() => isRun && screenRef.current?.requestFullscreen()}
         />
 
-        {gba && !gba.audio.context && (
+        {initialized && (
           <div id="sound" className="flex">
             <div>
               <NextImage
@@ -167,6 +159,7 @@ const Index = () => {
               value="1"
               step="any"
               onChange={(e) => setVolume(Number(e.target.value))}
+              disabled={mute}
             />
           </div>
         )}
