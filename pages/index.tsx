@@ -6,6 +6,9 @@ import { base64ToArrayBuffer } from 'src/utils/biosbin';
 let gba: GameBoyAdvance | null | undefined;
 let runCommands: (() => any)[] = [];
 
+const bios =
+  'BgAA6v7//+oFAADq/v//6v7//+oAAKDhDAAA6v7//+oC86DjAABd4wHToAMg0E0CAEAt6QIAXuUEAFDjCQAACwUAUOMHAAALAEC96A7wsOEPUC3pAQOg4wDgj+IE8BDlD1C96ATwXuIQQC3pBNBN4rAQzeEBQ6DjAkyE4rAA1OGyAM3hsBDd4QEAgOGwAMThAUOg4x8AoOMA8CnhAACg4wEDxOXTAKDjAPAp4bgAVOGwEN3hABAR4AAQIRC4EEQR8///CgFDoOMCTITisgDd4bAAxOEE0I3iEIC96A==\n';
+
 const setVolume = (value: number) => {
   if (!gba) return;
   gba.audio.masterVolume = Math.pow(2, value) - 1;
@@ -51,11 +54,12 @@ const Index = () => {
     setPaused(gba.paused);
   };
 
-  const [mute, setMute] = useState<boolean>(false);
+  const [mute, setMute] = useState<boolean>(true);
   const toggleSound = () => {
+    const old = mute;
     setMute(!mute);
     if (gba) {
-      gba.audio.masterEnable = !mute;
+      gba.audio.masterEnable = old;
       if (gba.audio.context) {
         if (gba.audio.context.state !== 'running') gba.audio.context.resume();
       }
@@ -83,14 +87,10 @@ const Index = () => {
     if (initialized) return;
 
     if (gba && screenRef.current) {
-      const biosBin = base64ToArrayBuffer(
-        'BgAA6v7//+oFAADq/v//6v7//+oAAKDhDAAA6v7//+oC86DjAABd4wHToAMg0E0CAEAt6QIAXuUEAFDjCQAACwUAUOMHAAALAEC96A7wsOEPUC3pAQOg4wDgj+IE8BDlD1C96ATwXuIQQC3pBNBN4rAQzeEBQ6DjAkyE4rAA1OGyAM3hsBDd4QEAgOGwAMThAUOg4x8AoOMA8CnhAACg4wEDxOXTAKDjAPAp4bgAVOGwEN3hABAR4AAQIRC4EEQR8///CgFDoOMCTITisgDd4bAAxOEE0I3iEIC96A==\n',
-      );
-
       const canvas = screenRef.current;
       gba.setCanvas(canvas);
       gba.logLevel = logLvs.ERROR;
-      gba.setBios(biosBin, false);
+      gba.setBios(base64ToArrayBuffer(bios), false);
       setInitialized(true);
     }
   }, [gba, screenRef.current, initialized]); // eslint-disable-line
