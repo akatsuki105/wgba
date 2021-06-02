@@ -1,7 +1,7 @@
 import { GameBoyAdvanceMMU, MemoryView, region, size } from '../mmu';
 import { Serializer } from '../util';
 
-const worker = 'js/video/worker';
+const worker = './worker';
 
 export class MemoryProxy {
   owner: any;
@@ -115,7 +115,6 @@ export class GameBoyAdvanceRenderProxy {
 
   constructor() {
     this.worker = new Worker(worker, { type: 'module' });
-
     this.currentFrame = 0;
     this.delay = 0;
     this.skipFrame = false;

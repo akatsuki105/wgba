@@ -95,21 +95,7 @@ export class GameBoyAdvance {
   }
 
   setCanvas(canvas: HTMLCanvasElement) {
-    if (canvas.offsetWidth != 240 || canvas.offsetHeight != 160) {
-      this.indirectCanvas = document.createElement('canvas');
-      this.indirectCanvas.setAttribute('height', '160');
-      this.indirectCanvas.setAttribute('width', '240');
-      this.targetCanvas = canvas;
-      this.setCanvasDirect(this.indirectCanvas);
-
-      const targetContext = canvas.getContext('2d', { alpha: false });
-      this.video.drawCallback = () => {
-        this.indirectCanvas &&
-          targetContext?.drawImage(this.indirectCanvas, 0, 0, canvas.width, canvas.height);
-      };
-    } else {
-      this.setCanvasDirect(canvas);
-    }
+    this.setCanvasDirect(canvas);
   }
 
   setCanvasDirect(canvas: HTMLCanvasElement) {

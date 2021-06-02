@@ -135,6 +135,7 @@ module.exports = {
         '@typescript-eslint/no-unused-vars': 0,
         '@typescript-eslint/restrict-plus-operands': 0,
         '@typescript-eslint/no-empty-function': 0,
+        '@typescript-eslint/no-floating-promises': 0,
     },
     overrides: [
         {
