@@ -1,0 +1,6 @@
+build/
+public/
+**/coverage/
+**/node_modules/
+**/reportWebVitals.ts
+**/*.js

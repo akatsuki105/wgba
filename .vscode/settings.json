@@ -1,0 +1,28 @@
+{
+    "css.validate": false,
+    "less.validate": false,
+    "scss.validate": false,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true,
+        "source.fixAll.stylelint": true
+    },
+    "editor.formatOnSave": false,
+    "editor.tabSize": 2,
+    "editor.wordWrap": "on",
+    "eslint.packageManager": "yarn",
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "npm.packageManager": "yarn",
+    "[markdown]": {
+        "files.trimTrailingWhitespace": false
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "node_modules": true,
+        ".next": true,
+    }
+}

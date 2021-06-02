@@ -1,0 +1,23 @@
+{
+  "Import BN": {
+		"prefix": "bn",
+		"body": [
+			"import { BigNumber as BN } from 'bignumber.js';"
+		],
+		"description": "Import BigNumber as BN"
+	},
+  "Import Bluebird": {
+		"prefix": "bb",
+		"body": [
+			"import { Promise } from 'bluebird';"
+		],
+		"description": "Import Bluebird for Promise"
+	},
+  "Import SWR": {
+		"prefix": "swr",
+		"body": [
+			"import useSWR from 'swr';"
+		],
+		"description": "Import SWR for useSWR"
+	}
+}

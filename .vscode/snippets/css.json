@@ -1,0 +1,9 @@
+{
+  "Styled-components Tailwind Macro": {
+		"prefix": "stw",
+		"body": [
+			"${tw``}"
+		],
+		"description": "tw format in twin.macro"
+	}
+}
