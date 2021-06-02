@@ -114,7 +114,7 @@ export class GameBoyAdvanceRenderProxy {
   scanlineQueue: { y: number; dirty: any }[];
 
   constructor() {
-    this.worker = new Worker(worker, { type: 'module' });
+    this.worker = new Worker(new URL(worker, import.meta.url));
     this.currentFrame = 0;
     this.delay = 0;
     this.skipFrame = false;
@@ -165,7 +165,7 @@ export class GameBoyAdvanceRenderProxy {
     this.worker.postMessage({ type: 'clear', SIZE_VRAM: size.VRAM, SIZE_OAM: size.OAM });
   }
 
-  freeze(encodeBase64: string): FrostProxy {
+  freeze(encodeBase64: any): FrostProxy {
     return {
       palette: Serializer.prefix(this.palette?.combine()),
       vram: Serializer.prefix(this.vram?.combine()),

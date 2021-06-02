@@ -20,6 +20,7 @@ const run = (file: Blob) => {
       runCommands.forEach((cmd) => cmd());
       runCommands = [];
 
+      console.log(gba);
       gba.runStable();
     }
   });
