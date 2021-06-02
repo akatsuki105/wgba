@@ -1,6 +1,14 @@
 export const white = '#FFFFFF';
 export const black = '#000000';
 
+export const old = {
+  main: '#36393f',
+  frame: '#2e3136',
+  border: '#2e3136',
+  borderTop: '#17181a',
+  borderBottom: '#454a52',
+};
+
 export const lightgreen = {
   100: '#d0fadc',
   200: '#a2f589',

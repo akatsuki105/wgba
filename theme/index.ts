@@ -1,4 +1,4 @@
-import { black, green, grey, red, blue, white, orange } from './colors';
+import { old, black, green, grey, red, blue, white, orange } from './colors';
 
 const theme = {
   buttonSize: {
@@ -15,6 +15,7 @@ const theme = {
     mobile: 400,
   },
   color: {
+    old,
     black,
     grey,
     red,

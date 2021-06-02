@@ -1,5 +1,6 @@
 import NextImage from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { Sound } from 'components/Sound';
 import { GameBoyAdvance, logLvs } from 'src/gba';
 import { base64ToArrayBuffer } from 'src/utils/biosbin';
 
@@ -141,28 +142,7 @@ const Index = () => {
           onClick={() => isRun && screenRef.current?.requestFullscreen()}
         />
 
-        {initialized && (
-          <div id="sound" className="flex">
-            <div>
-              <NextImage
-                src={mute ? '/images/volume_off.svg' : '/images/volume_on.svg'}
-                width="36"
-                height="36"
-                onClick={toggleSound}
-              />
-            </div>
-            <input
-              id="volume"
-              type="range"
-              min="0"
-              max="1"
-              value="1"
-              step="any"
-              onChange={(e) => setVolume(Number(e.target.value))}
-              disabled={mute}
-            />
-          </div>
-        )}
+        {initialized && <Sound mute={mute} toggleSound={toggleSound} setVolume={setVolume} />}
       </div>
     </div>
   );
