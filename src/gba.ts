@@ -53,6 +53,7 @@ export class GameBoyAdvance {
   indirectCanvas?: HTMLCanvasElement;
   targetCanvas?: HTMLCanvasElement;
   context?: CanvasRenderingContext2D;
+  isMobile: boolean;
 
   constructor() {
     this.logLevel = logLvs.ERROR | logLvs.WARN;
@@ -92,6 +93,8 @@ export class GameBoyAdvance {
     this.video.vblankCallback = () => {
       this.seenFrame = true;
     };
+
+    this.isMobile = false;
   }
 
   setCanvas(canvas: HTMLCanvasElement) {

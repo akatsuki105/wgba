@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Controller } from 'components/Controller';
 import { Frame } from 'components/Frame';
 import { Screen } from 'components/Screen';
+import { useResponsive } from 'hooks/useResponsive';
 import { GameBoyAdvance, logLvs } from 'src/gba';
 import { base64ToArrayBuffer } from 'src/utils';
 
@@ -28,6 +29,7 @@ const powerOff = () => {
 
 const Index = () => {
   const [initialized, setInitialized] = useState<boolean>(false);
+  const media = useResponsive();
 
   const [isRun, setIsRun] = useState<boolean>(false);
   const run = (file: Blob) => {
@@ -72,6 +74,7 @@ const Index = () => {
     try {
       gba = new GameBoyAdvance();
       gba.keypad.eatInput = true;
+      gba.isMobile = ['xs', 'sm'].includes(media);
       gba.setLogger((level: number, error: Error) => {
         if (gba) gba.pause();
         setPixelated(true);
@@ -80,7 +83,7 @@ const Index = () => {
       console.error(exception);
       gba = null;
     }
-  }, []);
+  }, []); // eslint-disable-line
 
   useEffect(() => {
     if (initialized) return;
