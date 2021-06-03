@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { styled } from 'twin.macro';
 import { Maximize } from 'components/Maximize';
 import { Pause } from 'components/Pause';
 import { Power } from 'components/Power';
+import { Screen } from 'components/Screen';
 import { Sound } from 'components/Sound';
 import { GameBoyAdvance, logLvs } from 'src/gba';
-import { base64ToArrayBuffer } from 'src/utils/biosbin';
+import { base64ToArrayBuffer } from 'src/utils';
 
 let gba: GameBoyAdvance | null | undefined;
 let runCommands: (() => any)[] = [];
@@ -24,9 +26,7 @@ const setPixelated = (pixelated: boolean) => {
 };
 
 const powerOff = () => {
-  if (window.confirm('Quit game, OK?')) {
-    location.reload();
-  }
+  if (window.confirm('Quit game, OK?')) location.reload();
 };
 
 const Index = () => {
@@ -99,11 +99,11 @@ const Index = () => {
 
   return (
     <div className="App">
-      <div id="frame">
-        <canvas id="screen" width="240" height="160" ref={screenRef}></canvas>
-      </div>
+      <Frame>
+        <Screen ref={screenRef} />
+      </Frame>
 
-      <div id="controls">
+      <StyledDiv>
         <Power isRun={isRun} turnOn={run} turnOff={powerOff} />
 
         <Pause isRun={isRun} paused={paused} toggle={togglePause} />
@@ -111,9 +111,33 @@ const Index = () => {
         <Maximize isRun={isRun} ref={screenRef} />
 
         {initialized && <Sound mute={mute} toggleSound={toggleSound} setVolume={setVolume} />}
-      </div>
+      </StyledDiv>
     </div>
   );
 };
+
+const Frame = styled.div`
+  margin-top: 4vh;
+  margin-left: auto;
+  margin-right: auto;
+  width: 720px;
+  height: 480px;
+  border: 40px solid ${(props) => props.theme.color.old.frame};
+  border-radius: 20px;
+`;
+
+const StyledDiv = styled.div`
+  position: fixed;
+  top: 80vh;
+  left: 50%;
+  transform: translate(-50%, 0%);
+  display: flex;
+  background-color: ${(props) => props.theme.color.old.frame};
+  border-radius: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 20px 40px;
+  width: 60%;
+`;
 
 export default Index;

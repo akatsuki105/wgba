@@ -14,7 +14,7 @@ export const Power: React.FC<Props> = React.memo(({ isRun, turnOn, turnOff }) =>
   return (
     <StyledDiv>
       <Image src="/images/power.svg" width="36" height="36" onClick={() => ref.current?.click()} />
-      <input
+      <StyledInput
         type="file"
         accept=".gba"
         ref={ref}
@@ -34,4 +34,13 @@ const StyledDiv = styled.div`
   border-radius: 24px;
   padding: 8px;
   margin: 8px;
+`;
+
+const StyledInput = styled.input`
+  opacity: 0 !important;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
 `;

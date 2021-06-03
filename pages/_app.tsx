@@ -7,7 +7,6 @@ import { Page } from 'components/atoms/Page';
 import { ModalsProvider } from 'contexts';
 import theme from 'theme';
 import 'tailwind.css';
-import './index.css';
 
 if (process.env.NODE_ENV === 'production') {
   console.log = (value: any) => {}; // eslint-disable-line
@@ -27,6 +26,9 @@ const App = ({ Component, pageProps }: AppProps): JSX.Element => {
             <style jsx global>{`
               body {
                 margin: 0;
+                background: #36393f;
+                text-align: center;
+                overflow: hidden;
               }
             `}</style>
             <Component {...pageProps} />
