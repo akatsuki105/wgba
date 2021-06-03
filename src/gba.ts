@@ -55,7 +55,7 @@ export class GameBoyAdvance {
   context?: CanvasRenderingContext2D;
   isMobile: boolean;
 
-  constructor() {
+  constructor(w: Worker) {
     this.logLevel = logLvs.ERROR | logLvs.WARN;
 
     this.rom = defaultCart;
@@ -64,7 +64,7 @@ export class GameBoyAdvance {
     this.mmu = new GameBoyAdvanceMMU(this.cpu, this);
     this.io = new GameBoyAdvanceIO(this.cpu, this);
     this.audio = new GameBoyAdvanceAudio(this.cpu, this);
-    this.video = new GameBoyAdvanceVideo(this.cpu, this);
+    this.video = new GameBoyAdvanceVideo(this.cpu, this, w);
     this.irq = new GameBoyAdvanceInterruptHandler(this.cpu, this.io, this.audio, this.video, this);
     this.keypad = new GameBoyAdvanceKeypad(this);
     this.sio = new GameBoyAdvanceSIO(this);

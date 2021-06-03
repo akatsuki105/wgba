@@ -60,12 +60,12 @@ export class GameBoyAdvanceVideo {
 
   context?: CanvasRenderingContext2D;
 
-  constructor(cpu: ARMCore, core: GameBoyAdvance) {
+  constructor(cpu: ARMCore, core: GameBoyAdvance, w: Worker) {
     this.cpu = cpu;
     this.core = core;
 
     try {
-      this.renderPath = new GameBoyAdvanceRenderProxy();
+      this.renderPath = new GameBoyAdvanceRenderProxy(w);
     } catch (err) {
       console.log(
         "Service worker renderer couldn't load. Save states (not save files) may be glitchy",

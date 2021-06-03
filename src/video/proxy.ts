@@ -113,8 +113,13 @@ export class GameBoyAdvanceRenderProxy {
 
   scanlineQueue: { y: number; dirty: any }[];
 
-  constructor() {
-    this.worker = new Worker(new URL(worker, import.meta.url));
+  constructor(w: Worker) {
+    try {
+      this.worker = w;
+    } catch (err) {
+      console.error(err);
+      this.worker = new Worker(new URL(worker, import.meta.url));
+    }
     this.currentFrame = 0;
     this.delay = 0;
     this.skipFrame = false;

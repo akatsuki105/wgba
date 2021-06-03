@@ -71,8 +71,9 @@ const Index = () => {
   const screenRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const w = new Worker(new URL('../src/video/worker.ts', import.meta.url));
     try {
-      gba = new GameBoyAdvance();
+      gba = new GameBoyAdvance(w);
       gba.keypad.eatInput = true;
       gba.isMobile = ['xs', 'sm'].includes(media);
       gba.setLogger((level: number, error: Error) => {
