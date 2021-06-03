@@ -12,7 +12,11 @@ const theme = {
   fontWeight: 700,
   siteWidth: 1440,
   breakpoints: {
-    mobile: 400,
+    xs: 380,
+    sm: 640,
+    md: 768,
+    lg: 1024,
+    xl: 1280,
   },
   color: {
     old,

@@ -2,6 +2,12 @@
   width: 100%
 }
 
+@media (min-width: 380px) {
+  .container {
+    max-width: 380px
+  }
+}
+
 @media (min-width: 640px) {
   .container {
     max-width: 640px
@@ -1121,9 +1127,18 @@
   --tw-backdrop-sepia: sepia(100%)
 }
 
+@media (min-width: 380px) {
+}
+
 @media (min-width: 640px) {
   .sm\:container {
     width: 100%
+  }
+
+  @media (min-width: 380px) {
+    .sm\:container {
+      max-width: 380px
+    }
   }
 
   @media (min-width: 640px) {
@@ -1180,6 +1195,12 @@
 @media (min-width: 768px) {
   .md\:container {
     width: 100%
+  }
+
+  @media (min-width: 380px) {
+    .md\:container {
+      max-width: 380px
+    }
   }
 
   @media (min-width: 640px) {

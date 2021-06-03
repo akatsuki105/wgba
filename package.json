@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:tw": "NODE_ENV=production yarn tailwindcss-cli build -c ./tailwind.config.js -o ./tailwind.css",
+    "build:tw": "NODE_ENV=production yarn tailwindcss-cli build -o ./tailwind.css",
     "lint": "eslint 'src/**/*.{ts,tsx}' && tsc --noEmit --pretty",
     "fix": "CI=true eslint --fix '**/*.{ts,tsx}'",
     "start": "next start"
@@ -14,6 +14,7 @@
     "next": "^10.2.3",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "react-responsive": "^8.2.0",
     "styled-components": "^5.3.0",
     "swr": "^0.5.6",
     "tailwindcss-cli": "^0.1.2",
@@ -25,6 +26,7 @@
     "@types/prettier": "^2.2.3",
     "@types/react": "^17.0.8",
     "@types/react-dom": "^17.0.5",
+    "@types/react-responsive": "^8.0.2",
     "@types/styled-components": "^5.1.9",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { styled } from 'twin.macro';
+import { Frame } from 'components/Frame';
 import { Maximize } from 'components/Maximize';
 import { Pause } from 'components/Pause';
 import { Power } from 'components/Power';
@@ -115,16 +116,6 @@ const Index = () => {
     </div>
   );
 };
-
-const Frame = styled.div`
-  margin-top: 4vh;
-  margin-left: auto;
-  margin-right: auto;
-  width: 720px;
-  height: 480px;
-  border: 40px solid ${(props) => props.theme.color.old.frame};
-  border-radius: 20px;
-`;
 
 const StyledDiv = styled.div`
   position: fixed;

@@ -6,7 +6,14 @@ export const Screen = React.forwardRef((_, ref: React.Ref<HTMLCanvasElement>) =>
 ));
 
 const StyledCanvas = styled.canvas`
-  transform: scale(3); /* fast due to GPU */
-  transform-origin: 50% 0%;
   image-rendering: pixelated;
+
+  @media (min-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
+    transform: scale(3); /* fast due to GPU */
+    transform-origin: 50% 0%;
+  }
+  @media (max-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
+    width: 100%;
+    height: 100%;
+  }
 `;
