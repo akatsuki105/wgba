@@ -3,7 +3,7 @@ import styled, { ThemeContext } from 'styled-components';
 
 type SeparatorOrientation = 'horizontal' | 'vertical';
 
-type SeparatorColor = 'grey' | 'blue' | 'green' | 'red';
+type SeparatorColor = 'gray' | 'blue' | 'green' | 'red';
 
 interface SeparatorProps {
   color?: SeparatorColor;
@@ -13,7 +13,7 @@ interface SeparatorProps {
 
 export const Separator: React.FC<SeparatorProps> = React.memo(({ color, orientation, stretch }) => {
   const theme = useContext(ThemeContext);
-  const palette = color ? theme.color[color] : theme.color.grey;
+  const palette = color ? theme.color[color] : theme.color.gray;
 
   let boxShadow = `0 -1px 0px ${palette[300]}`;
   if (orientation === 'vertical') {

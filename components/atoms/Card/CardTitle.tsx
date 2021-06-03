@@ -11,7 +11,7 @@ export const CardTitle: React.FC<CardTitleProps> = React.memo(({ text, fontSize 
 ));
 
 const StyledCardTitle = styled.div<{ fontSize: number }>`
-  color: ${(props) => props.theme.color.grey[800]};
+  color: ${(props) => props.theme.color.gray[800]};
   font-size: ${(props) => props.fontSize}px;
   font-weight: ${(props) => props.theme.fontWeight};
   padding: ${(props) => props.theme.spacing[2]}px 0px 0px ${(props) => props.theme.spacing[3]}px;

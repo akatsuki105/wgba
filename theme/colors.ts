@@ -7,6 +7,7 @@ export const old = {
   border: '#2e3136',
   borderTop: '#17181a',
   borderBottom: '#454a52',
+  cobalt: '#2222ff',
 };
 
 export const lightgreen = {
@@ -68,7 +69,7 @@ export const blue = {
   800: '#00348d',
 };
 
-export const grey = {
+export const gray = {
   100: '#f6f6f6',
   200: '#f1f1f1',
   300: '#e5e5e5',

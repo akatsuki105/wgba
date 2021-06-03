@@ -24,5 +24,5 @@ const StyledLoader = styled.div`
 `;
 
 const StyledText = styled.div`
-  color: ${(props) => props.theme.color.grey[400]};
+  color: ${(props) => props.theme.color.gray[400]};
 `;

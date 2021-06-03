@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { styled } from 'twin.macro';
+import { Controller } from 'components/Controller';
 import { Frame } from 'components/Frame';
-import { Maximize } from 'components/Maximize';
-import { Pause } from 'components/Pause';
-import { Power } from 'components/Power';
 import { Screen } from 'components/Screen';
-import { Sound } from 'components/Sound';
 import { GameBoyAdvance, logLvs } from 'src/gba';
 import { base64ToArrayBuffer } from 'src/utils';
 
@@ -104,31 +100,9 @@ const Index = () => {
         <Screen ref={screenRef} />
       </Frame>
 
-      <StyledDiv>
-        <Power isRun={isRun} turnOn={run} turnOff={powerOff} />
-
-        <Pause isRun={isRun} paused={paused} toggle={togglePause} />
-
-        <Maximize onClick={() => isRun && screenRef.current?.requestFullscreen()} />
-
-        {initialized && <Sound mute={mute} toggleSound={toggleSound} setVolume={setVolume} />}
-      </StyledDiv>
+      <Controller isRun={isRun} turnOn={run} turnOff={powerOff} />
     </div>
   );
 };
-
-const StyledDiv = styled.div`
-  position: fixed;
-  top: 80vh;
-  left: 50%;
-  transform: translate(-50%, 0%);
-  display: flex;
-  background-color: ${(props) => props.theme.color.old.frame};
-  border-radius: 20px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 20px 40px;
-  width: 60%;
-`;
 
 export default Index;

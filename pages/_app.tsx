@@ -27,8 +27,6 @@ const App = ({ Component, pageProps }: AppProps): JSX.Element => {
               body {
                 margin: 0;
                 background: #36393f;
-                text-align: center;
-                overflow: hidden;
               }
             `}</style>
             <Component {...pageProps} />

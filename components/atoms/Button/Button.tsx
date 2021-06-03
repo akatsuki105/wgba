@@ -85,12 +85,12 @@ interface StyledButtonProps {
 
 const StyledButton = styled.button<StyledButtonProps>`
   align-items: center;
-  background: ${(props) => props.theme.color.grey[300]};
+  background: ${(props) => props.theme.color.gray[300]};
   border: 0;
   border-radius: ${(props) => props.theme.radius}px;
-  box-shadow: inset 1px 1px 0px ${(props) => props.theme.color.grey[100]};
+  box-shadow: inset 1px 1px 0px ${(props) => props.theme.color.gray[100]};
   color: ${(props) =>
-    !props.disabled ? props.theme.color.grey[800] : props.theme.color.grey[500]};
+    !props.disabled ? props.theme.color.gray[800] : props.theme.color.gray[500]};
   cursor: pointer;
   display: flex;
   font-size: ${(props) => props.fontSize}px;
@@ -103,7 +103,7 @@ const StyledButton = styled.button<StyledButtonProps>`
   pointer-events: ${(props) => (!props.disabled ? undefined : 'none')};
   width: 100%;
   &:hover {
-    background-color: ${(props) => props.theme.color.grey[100]};
+    background-color: ${(props) => props.theme.color.gray[100]};
   }
 `;
 

@@ -4,6 +4,7 @@ import { styled } from 'twin.macro';
 export const Frame: React.FC = React.memo(({ children }) => <StyledDiv>{children}</StyledDiv>);
 
 const StyledDiv = styled.div`
+  /* PC */
   @media (min-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
     margin-top: 4vh;
     margin-left: auto;
@@ -14,7 +15,12 @@ const StyledDiv = styled.div`
     border-radius: 20px;
   }
 
+  /* mobile */
   @media (max-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
+    background-color: ${({ theme }) => theme.color.black};
     width: 100vw;
+    height: 50vh;
+    display: flex;
+    align-items: center;
   }
 `;

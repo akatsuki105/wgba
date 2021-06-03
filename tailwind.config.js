@@ -1,4 +1,5 @@
 module.exports = {
+  mode: 'jit',
   future: {
     removeDeprecatedGapUtilities: true,
     purgeLayersByDefault: true,
@@ -10,7 +11,7 @@ module.exports = {
       './**/*.html'
     ],
     options: {
-      whitelistPatterns: [],
+      safelist: [/^w-/],
     }
   },
   prefix: '',
