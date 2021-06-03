@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import React, { useRef } from 'react';
 import tw, { styled } from 'twin.macro';
 import { LBtn, RBtn } from 'components/Button';
@@ -8,9 +7,10 @@ type Props = {
   isRun: boolean;
   turnOn: (f: File) => void;
   turnOff: () => void;
+  toggleSound: () => void;
 };
 
-export const Controller: React.FC<Props> = React.memo(({ isRun, turnOn, turnOff }) => {
+export const Controller: React.FC<Props> = React.memo(({ isRun, turnOn, turnOff, toggleSound }) => {
   const ref = useRef<HTMLInputElement>(null);
 
   return (
@@ -18,10 +18,14 @@ export const Controller: React.FC<Props> = React.memo(({ isRun, turnOn, turnOff 
       <StyledFlex>
         <LBtn />
         <FlexBox className="w-6/12" center>
-          <Image src="/images/gba_logo.png" width="140px" height="18px" />
+          <img src="/images/gba_logo.png" width="140px" height="18px" />
         </FlexBox>
         <RBtn />
       </StyledFlex>
+
+      <VolumeContainer center>
+        <SoundBtn onClick={toggleSound} />
+      </VolumeContainer>
 
       <FlexBox>
         <ABDpadContainer column>
@@ -70,9 +74,22 @@ const StyledFlex = styled(FlexBox)`
   background-color: ${({ theme }) => theme.color.old.frame};
 `;
 
+const VolumeContainer = styled(FlexBox)`
+  height: 1vh;
+`;
+
+const SoundBtn = styled.div`
+  background-color: ${({ theme }) => theme.color.gray[400]};
+  margin-top: 10vh;
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  z-index: 9999;
+`;
+
 const ABDpadContainer = styled(FlexBox)`
   ${tw`w-6/12`}
-  height: 40vh;
+  height: 39vh;
   display: flex;
   align-items: center;
   justify-content: center;

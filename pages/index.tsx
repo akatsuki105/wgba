@@ -100,7 +100,7 @@ const Index = () => {
         <Screen ref={screenRef} />
       </Frame>
 
-      <Controller isRun={isRun} turnOn={run} turnOff={powerOff} />
+      <Controller isRun={isRun} turnOn={run} turnOff={powerOff} toggleSound={toggleSound} />
     </div>
   );
 };
