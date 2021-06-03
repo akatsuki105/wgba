@@ -108,7 +108,7 @@ const Index = () => {
 
         <Pause isRun={isRun} paused={paused} toggle={togglePause} />
 
-        <Maximize isRun={isRun} ref={screenRef} />
+        <Maximize onClick={() => isRun && screenRef.current?.requestFullscreen()} />
 
         {initialized && <Sound mute={mute} toggleSound={toggleSound} setVolume={setVolume} />}
       </StyledDiv>

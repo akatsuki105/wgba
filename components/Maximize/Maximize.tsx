@@ -1,20 +1,14 @@
 import Image from 'next/image';
-import React, { RefObject } from 'react';
+import React from 'react';
 import { styled } from 'twin.macro';
 
 type Props = {
-  isRun: boolean;
-  ref: RefObject<HTMLCanvasElement>;
+  onClick: () => void;
 };
 
-export const Maximize: React.FC<Props> = React.memo(({ isRun, ref }) => (
+export const Maximize: React.FC<Props> = React.memo(({ onClick }) => (
   <StyledDiv>
-    <Image
-      src="/images/maximize.svg"
-      width="36"
-      height="36"
-      onClick={() => isRun && ref.current?.requestFullscreen()}
-    />
+    <Image src="/images/maximize.svg" width="36" height="36" onClick={onClick} />
   </StyledDiv>
 ));
 
