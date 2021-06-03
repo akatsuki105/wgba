@@ -1,40 +1,18 @@
-# nextjs-starter
+# WebGBA
 
-## features
+Play GBA game on your Web browser!
 
-- webpack5
-- tailwind.css + styled-components (+ twin.macro)
-- useful atoms components
+## Todos
 
-## start
+- [ ] Responsive
+- [ ] Support GB/GBC using goomba
+- [ ] PWA
+- [ ] Improve performance
+- [ ] ROM management using localForage
+- [ ] Keymap setting by player
+- [ ] Support GamePad
 
-```sh
-yarn install
-yarn dev
-```
+## Credits
 
-## update dependencies
-
-```sh
-python3 ./scripts/yarnd.py
-```
-
-## hygen
-
-**Create pages**
-
-```sh
-hygen pages new
-```
-
-**Create container component**
-
-```sh
-hygen container new
-```
-
-**Create presentational component**
-
-```sh
-hygen present new
-```
+- [endrift/gbajs](https://github.com/endrift/gbajs)
+- [andychase/gbajs2](https://github.com/andychase/gbajs2) 
