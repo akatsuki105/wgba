@@ -7,7 +7,7 @@ interface ContainerProps {
 }
 
 export const Container: React.FC<ContainerProps> = React.memo(({ children, size = 'md' }) => {
-  const { siteWidth } = useContext<{ siteWidth: number }>(ThemeContext);
+  const siteWidth = useContext(ThemeContext).siteWidth;
   let width: number;
   switch (size) {
     case 'sm':

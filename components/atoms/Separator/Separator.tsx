@@ -21,13 +21,7 @@ export const Separator: React.FC<SeparatorProps> = React.memo(({ color, orientat
   }
 
   const Content = useMemo(() => {
-    return (
-      <StyledSeparator
-        color={palette[100] as string}
-        boxShadow={boxShadow}
-        orientation={orientation}
-      />
-    );
+    return <StyledSeparator color={palette[100]} boxShadow={boxShadow} orientation={orientation} />;
   }, [palette, boxShadow, orientation]);
 
   if (stretch) {

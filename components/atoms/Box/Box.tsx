@@ -63,7 +63,7 @@ export const Box: React.FC<BoxProps> = React.memo(
     width,
     ...props
   }) => {
-    const { spacing } = useContext(ThemeContext);
+    const spacing = useContext(ThemeContext).spacing as { [key: number]: number };
 
     const display = useMemo(() => {
       if (row || column) {
