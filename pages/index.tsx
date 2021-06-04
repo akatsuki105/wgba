@@ -72,7 +72,7 @@ const Index = () => {
 
   const [fps, setFPS] = useState<number>(0);
   useEffect(() => {
-    const w = new Worker(new URL('../src/video/worker.ts', import.meta.url));
+    const w = new Worker(new URL('../src/video/worker.ts', import.meta.url), { type: 'module' });
     try {
       gba = new GameBoyAdvance(w, setFPS as (f: number) => void);
       gba.keypad.eatInput = true;
