@@ -27,7 +27,13 @@ type ItemProps = {
 };
 
 export const MenuItem: React.FC<ItemProps> = React.memo(({ onClick, onDismiss, children }) => {
-  onClick = onClick || onDismiss;
+  const old = onClick;
+  onClick = old
+    ? () => {
+        old && old();
+        onDismiss && onDismiss();
+      }
+    : onDismiss;
 
   return (
     <li className="px-6 py-4" onClick={onClick}>

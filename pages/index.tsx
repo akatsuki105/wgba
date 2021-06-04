@@ -51,7 +51,7 @@ const Index = () => {
 
   const [paused, setPaused] = useState<boolean>(false);
   const togglePause = () => {
-    if (!gba) return;
+    if (!gba || !isRun) return;
     gba.paused ? gba.runStable() : gba.pause();
     setPaused(gba.paused);
   };
@@ -105,7 +105,14 @@ const Index = () => {
         <Screen ref={screenRef} />
       </Frame>
 
-      <Controller isRun={isRun} turnOn={run} turnOff={powerOff} toggleSound={toggleSound} />
+      <Controller
+        isRun={isRun}
+        mute={mute}
+        turnOn={run}
+        turnOff={powerOff}
+        togglePause={togglePause}
+        toggleSound={toggleSound}
+      />
     </div>
   );
 };

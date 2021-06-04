@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import tw, { styled } from 'twin.macro';
 import { LBtn, RBtn } from 'components/Button';
 import { Menu, MenuItem } from 'components/Menu';
@@ -7,62 +7,78 @@ import { useModal } from 'hooks';
 
 type Props = {
   isRun: boolean;
+  mute: boolean;
   turnOn: (f: File) => void;
   turnOff: () => void;
+  togglePause: () => void;
   toggleSound: () => void;
 };
 
-export const Controller: React.FC<Props> = React.memo(({ isRun, turnOn, turnOff, toggleSound }) => {
-  const [_, openModal] = useModal(
-    <Menu>
-      <MenuItem onClick={() => {}}>Load ROM</MenuItem>
-      <MenuItem onClick={() => {}}>Quit Game</MenuItem>
-      <MenuItem>Cancel</MenuItem>
-    </Menu>,
-  );
+export const Controller: React.FC<Props> = React.memo(
+  ({ isRun, mute, turnOn, turnOff, togglePause, toggleSound }) => {
+    const ref = useRef<HTMLInputElement>(null);
+    const [_, openModal] = useModal(
+      <Menu>
+        {/* <MenuItem onClick={() => {}}>Load ROM</MenuItem> */}
+        <MenuItem onClick={() => ref.current?.click()}>Add new ROM</MenuItem>
+        <MenuItem onClick={turnOff}>Quit Game</MenuItem>
+        <MenuItem onClick={toggleSound}>{mute ? 'Play sound' : 'Mute'}</MenuItem>
+        <MenuItem>Cancel</MenuItem>
+      </Menu>,
+    );
 
-  return (
-    <StyledDiv>
-      <StyledFlex>
-        <LBtn />
-        <FlexBox className="w-6/12" center>
-          <img src="/images/gba_logo.png" width="140px" height="18px" />
-        </FlexBox>
-        <RBtn />
-      </StyledFlex>
-
-      <VolumeContainer center>
-        <SoundBtn onClick={toggleSound} />
-      </VolumeContainer>
-
-      <FlexBox>
-        <ABDpadContainer column>
-          <DpadUp />
-          <FlexBox>
-            <DpadLeft />
-            <DpadBasic />
-            <DpadRight />
+    return (
+      <StyledDiv>
+        <StyledFlex>
+          <LBtn />
+          <FlexBox className="w-6/12" center>
+            <img src="/images/gba_logo.png" width="140px" height="18px" />
           </FlexBox>
-          <DpadDown />
-        </ABDpadContainer>
+          <RBtn />
+        </StyledFlex>
 
-        <ABDpadContainer column>
-          <ABtn></ABtn>
-          <BBtn></BBtn>
-        </ABDpadContainer>
-      </FlexBox>
+        <VolumeContainer center>
+          <PauseBtn onClick={togglePause} />
+        </VolumeContainer>
 
-      <FlexBox>
-        <div tw="w-1/12"></div>
-        <MenuBtn onClick={openModal} />
-        <div tw="w-1/12"></div>
-        <SelectBtn />
-        <div tw="w-2/12"></div>
-        <StartBtn />
-      </FlexBox>
-    </StyledDiv>
-  );
-});
+        <FlexBox>
+          <ABDpadContainer column>
+            <DpadUp />
+            <FlexBox>
+              <DpadLeft />
+              <DpadBasic />
+              <DpadRight />
+            </FlexBox>
+            <DpadDown />
+          </ABDpadContainer>
+
+          <ABDpadContainer column>
+            <ABtn></ABtn>
+            <BBtn></BBtn>
+          </ABDpadContainer>
+        </FlexBox>
+
+        <FlexBox>
+          <div tw="w-1/12"></div>
+          <MenuBtn onClick={openModal} />
+          <div tw="w-1/12"></div>
+          <SelectBtn />
+          <div tw="w-2/12"></div>
+          <StartBtn />
+        </FlexBox>
+
+        <StyledInput
+          type="file"
+          accept=".gba"
+          ref={ref}
+          onChange={(e) => {
+            e.target.files && turnOn(e.target.files[0]);
+          }}
+        />
+      </StyledDiv>
+    );
+  },
+);
 
 const StyledDiv = styled.div`
   height: 50vh;
@@ -77,7 +93,7 @@ const VolumeContainer = styled(FlexBox)`
   height: 1vh;
 `;
 
-const SoundBtn = styled.div`
+const PauseBtn = styled.div`
   background-color: ${({ theme }) => theme.color.gray[400]};
   margin-top: 10vh;
   width: 16px;
