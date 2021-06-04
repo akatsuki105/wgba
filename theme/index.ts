@@ -47,6 +47,10 @@ const theme = {
     8: 72,
     9: 96,
   },
+  z: {
+    pause: 99,
+    modal: 9999,
+  },
 };
 
 export default theme;

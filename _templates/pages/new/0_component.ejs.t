@@ -3,7 +3,7 @@ to: pages/<%= h.dirpath(dir) %>/<%= h.capitalize(name) %>.tsx
 ---
 
 import React from 'react';
-import styled from 'styled-components';
+import { styled } from 'twin.macro';
 
 const <%= h.capitalize(name) %>: React.FC = React.memo(() => {
   return <StyledDiv>Hello</StyledDiv>;

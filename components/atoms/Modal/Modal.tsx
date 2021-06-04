@@ -3,11 +3,12 @@ import styled, { keyframes } from 'styled-components';
 
 export interface ModalProps {
   onDismiss?: () => void;
+  className?: string;
 }
 
-export const Modal: React.FC = ({ children }) => {
+export const Modal: React.FC<ModalProps> = ({ children, className = '' }) => {
   return (
-    <StyledResponsiveWrapper>
+    <StyledResponsiveWrapper className={className}>
       <StyledModal>{children}</StyledModal>
     </StyledResponsiveWrapper>
   );
@@ -31,6 +32,7 @@ const StyledResponsiveWrapper = styled.div`
   width: 100%;
   max-width: 768px;
   max-height: 90%;
+  z-index: ${({ theme }) => theme.z.modal};
   @media (max-width: ${(props) => props.theme.breakpoints.md}px) {
     flex: 1;
     position: absolute;
@@ -44,10 +46,6 @@ const StyledResponsiveWrapper = styled.div`
 
 const StyledModal = styled.div`
   padding: 0 20px;
-  background: ${(props) => props.theme.color.gray[200]};
-  border: 1px solid ${(props) => props.theme.color.gray[300]}ff;
-  border-radius: ${(props) => props.theme.radius}px;
-  box-shadow: inset 1px 1px 0px ${(props) => props.theme.color.gray[100]};
   display: flex;
   flex-direction: column;
   position: relative;

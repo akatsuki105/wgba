@@ -1,7 +1,9 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import tw, { styled } from 'twin.macro';
 import { LBtn, RBtn } from 'components/Button';
+import { Menu, MenuItem } from 'components/Menu';
 import { FlexBox } from 'components/atoms/FlexBox';
+import { useModal } from 'hooks';
 
 type Props = {
   isRun: boolean;
@@ -11,7 +13,13 @@ type Props = {
 };
 
 export const Controller: React.FC<Props> = React.memo(({ isRun, turnOn, turnOff, toggleSound }) => {
-  const ref = useRef<HTMLInputElement>(null);
+  const [_, openModal] = useModal(
+    <Menu>
+      <MenuItem onClick={() => {}}>Load ROM</MenuItem>
+      <MenuItem onClick={() => {}}>Quit Game</MenuItem>
+      <MenuItem>Cancel</MenuItem>
+    </Menu>,
+  );
 
   return (
     <StyledDiv>
@@ -46,16 +54,7 @@ export const Controller: React.FC<Props> = React.memo(({ isRun, turnOn, turnOff,
 
       <FlexBox>
         <div tw="w-1/12"></div>
-        <MenuBtn onClick={() => ref.current?.click()} />
-        <StyledInput
-          type="file"
-          accept=".gba"
-          ref={ref}
-          onClick={() => isRun && turnOff()}
-          onChange={(e) => {
-            e.target.files && turnOn(e.target.files[0]);
-          }}
-        />
+        <MenuBtn onClick={openModal} />
         <div tw="w-1/12"></div>
         <SelectBtn />
         <div tw="w-2/12"></div>
@@ -84,7 +83,7 @@ const SoundBtn = styled.div`
   width: 16px;
   height: 16px;
   border-radius: 8px;
-  z-index: 9999;
+  z-index: ${({ theme }) => theme.z.pause};
 `;
 
 const ABDpadContainer = styled(FlexBox)`

@@ -7,7 +7,6 @@ Play GBA game on your Web browser!
 - [ ] Responsive
 - [ ] Support GB/GBC using goomba
 - [ ] PWA
-- [ ] Improve performance
 - [ ] ROM management using localForage
 - [ ] Keymap setting by player
 - [ ] Support GamePad
