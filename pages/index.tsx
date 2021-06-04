@@ -70,10 +70,11 @@ const Index = () => {
 
   const screenRef = useRef<HTMLCanvasElement>(null);
 
+  const [fps, setFPS] = useState<number>(0);
   useEffect(() => {
     const w = new Worker(new URL('../src/video/worker.ts', import.meta.url));
     try {
-      gba = new GameBoyAdvance(w);
+      gba = new GameBoyAdvance(w, setFPS as (f: number) => void);
       gba.keypad.eatInput = true;
       gba.isMobile = ['xs', 'sm'].includes(media);
       gba.setLogger((level: number, error: Error) => {
@@ -100,7 +101,7 @@ const Index = () => {
 
   return (
     <div className="App">
-      <Frame>
+      <Frame fps={fps}>
         <Screen ref={screenRef} />
       </Frame>
 

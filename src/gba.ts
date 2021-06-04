@@ -55,7 +55,7 @@ export class GameBoyAdvance {
   context?: CanvasRenderingContext2D;
   isMobile: boolean;
 
-  constructor(w: Worker) {
+  constructor(w: Worker, reportFPS?: (f: number) => void) {
     this.logLevel = logLvs.ERROR | logLvs.WARN;
 
     this.rom = defaultCart;
@@ -81,7 +81,7 @@ export class GameBoyAdvance {
     this.lastVblank = 0;
 
     this.queue = null;
-    this.reportFPS = null;
+    this.reportFPS = reportFPS || null;
     this.throttle = 16; // This is rough, but the 2/3ms difference gives us a good overhead
 
     window.queueFrame = (f: TimerHandler) => {

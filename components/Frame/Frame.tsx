@@ -1,7 +1,16 @@
 import React from 'react';
 import { styled } from 'twin.macro';
 
-export const Frame: React.FC = React.memo(({ children }) => <StyledDiv>{children}</StyledDiv>);
+type Props = {
+  fps?: number;
+};
+
+export const Frame: React.FC<Props> = React.memo(({ fps, children }) => (
+  <StyledDiv>
+    {fps ? <FPS>FPS: {fps}</FPS> : null}
+    {children}
+  </StyledDiv>
+));
 
 const StyledDiv = styled.div`
   /* PC */
@@ -23,4 +32,11 @@ const StyledDiv = styled.div`
     display: flex;
     align-items: center;
   }
+`;
+
+const FPS = styled.div`
+  position: fixed;
+  top: 4px;
+  left: 4px;
+  color: ${({ theme }) => theme.color.white};
 `;
