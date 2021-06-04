@@ -13,7 +13,7 @@ const keyIdx = {
   DOWN: 7,
   R: 8,
   L: 9,
-};
+} as const;
 
 export class GameBoyAdvanceKeypad {
   KEYCODE_LEFT: string;
@@ -248,6 +248,56 @@ export class GameBoyAdvanceKeypad {
       case 'L':
         this.KEYCODE_L = keycode;
         break;
+    }
+  }
+
+  setGBAKey(key: keyof typeof keyIdx, state: 'keydown' | 'keyup') {
+    let [toggle, rToggle] = [0, 0];
+    switch (key) {
+      case 'START':
+        toggle = keyIdx.START;
+        break;
+      case 'SELECT':
+        toggle = keyIdx.SELECT;
+        break;
+      case 'A':
+        toggle = keyIdx.A;
+        break;
+      case 'B':
+        toggle = keyIdx.B;
+        break;
+      case 'L':
+        toggle = keyIdx.L;
+        break;
+      case 'R':
+        toggle = keyIdx.R;
+        break;
+      case 'UP':
+        toggle = keyIdx.UP;
+        rToggle = keyIdx.DOWN;
+        break;
+      case 'RIGHT':
+        toggle = keyIdx.RIGHT;
+        rToggle = keyIdx.LEFT;
+        break;
+      case 'DOWN':
+        toggle = keyIdx.DOWN;
+        rToggle = keyIdx.UP;
+        break;
+      case 'LEFT':
+        toggle = keyIdx.LEFT;
+        rToggle = keyIdx.RIGHT;
+        break;
+      default:
+        return;
+    }
+
+    toggle = 1 << toggle;
+    state == 'keydown' ? (this.currentDown &= ~toggle) : (this.currentDown |= toggle);
+
+    if (rToggle > 0) {
+      rToggle = 1 << rToggle;
+      state == 'keydown' && (this.currentDown |= rToggle);
     }
   }
 }

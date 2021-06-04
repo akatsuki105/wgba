@@ -106,6 +106,7 @@ const Index = () => {
       </Frame>
 
       <Controller
+        gba={gba || undefined}
         isRun={isRun}
         mute={mute}
         turnOn={run}

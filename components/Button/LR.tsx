@@ -1,11 +1,16 @@
 import React from 'react';
 import tw, { styled } from 'twin.macro';
 
-export const LBtn: React.FC = React.memo(() => {
+type Props = {
+  onTouchStart: () => void;
+  onTouchEnd: () => void;
+};
+
+export const LBtn: React.FC<Props> = React.memo(() => {
   return <StyledL>L</StyledL>;
 });
 
-export const RBtn: React.FC = React.memo(() => {
+export const RBtn: React.FC<Props> = React.memo(() => {
   return <StyledR>R</StyledR>;
 });
 

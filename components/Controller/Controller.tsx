@@ -4,8 +4,10 @@ import { LBtn, RBtn } from 'components/Button';
 import { Menu, MenuItem } from 'components/Menu';
 import { FlexBox } from 'components/atoms/FlexBox';
 import { useModal } from 'hooks';
+import { GameBoyAdvance } from 'src/gba';
 
 type Props = {
+  gba?: GameBoyAdvance;
   isRun: boolean;
   mute: boolean;
   turnOn: (f: File) => void;
@@ -15,7 +17,7 @@ type Props = {
 };
 
 export const Controller: React.FC<Props> = React.memo(
-  ({ isRun, mute, turnOn, turnOff, togglePause, toggleSound }) => {
+  ({ gba, isRun, mute, turnOn, turnOff, togglePause, toggleSound }) => {
     const ref = useRef<HTMLInputElement>(null);
     const [_, openModal] = useModal(
       <Menu>
@@ -30,11 +32,17 @@ export const Controller: React.FC<Props> = React.memo(
     return (
       <StyledDiv>
         <StyledFlex>
-          <LBtn />
+          <LBtn
+            onTouchStart={() => gba?.keypad.setGBAKey('L', 'keydown')}
+            onTouchEnd={() => gba?.keypad.setGBAKey('L', 'keyup')}
+          />
           <FlexBox className="w-6/12" center>
             <img src="/images/gba_logo.png" width="140px" height="18px" />
           </FlexBox>
-          <RBtn />
+          <RBtn
+            onTouchStart={() => gba?.keypad.setGBAKey('R', 'keydown')}
+            onTouchEnd={() => gba?.keypad.setGBAKey('R', 'keyup')}
+          />
         </StyledFlex>
 
         <VolumeContainer center>
@@ -43,18 +51,42 @@ export const Controller: React.FC<Props> = React.memo(
 
         <FlexBox>
           <ABDpadContainer column>
-            <DpadUp />
+            <DpadUp
+              onTouchStart={() => gba?.keypad.setGBAKey('UP', 'keydown')}
+              onTouchMove={(e) => e.preventDefault()}
+              onTouchEnd={() => gba?.keypad.setGBAKey('UP', 'keyup')}
+            />
             <FlexBox>
-              <DpadLeft />
+              <DpadLeft
+                onTouchStart={() => gba?.keypad.setGBAKey('LEFT', 'keydown')}
+                onTouchMove={(e) => e.preventDefault()}
+                onTouchEnd={() => gba?.keypad.setGBAKey('LEFT', 'keyup')}
+              />
               <DpadBasic />
-              <DpadRight />
+              <DpadRight
+                onTouchStart={() => gba?.keypad.setGBAKey('RIGHT', 'keydown')}
+                onTouchMove={(e) => e.preventDefault()}
+                onTouchEnd={() => gba?.keypad.setGBAKey('RIGHT', 'keyup')}
+              />
             </FlexBox>
-            <DpadDown />
+            <DpadDown
+              onTouchStart={() => gba?.keypad.setGBAKey('DOWN', 'keydown')}
+              onTouchMove={(e) => e.preventDefault()}
+              onTouchEnd={() => gba?.keypad.setGBAKey('DOWN', 'keyup')}
+            />
           </ABDpadContainer>
 
           <ABDpadContainer column>
-            <ABtn></ABtn>
-            <BBtn></BBtn>
+            <ABtn
+              onTouchStart={() => gba?.keypad.setGBAKey('A', 'keydown')}
+              onTouchMove={(e) => e.preventDefault()}
+              onTouchEnd={() => gba?.keypad.setGBAKey('A', 'keyup')}
+            ></ABtn>
+            <BBtn
+              onTouchStart={() => gba?.keypad.setGBAKey('B', 'keydown')}
+              onTouchMove={(e) => e.preventDefault()}
+              onTouchEnd={() => gba?.keypad.setGBAKey('B', 'keyup')}
+            ></BBtn>
           </ABDpadContainer>
         </FlexBox>
 
@@ -62,9 +94,15 @@ export const Controller: React.FC<Props> = React.memo(
           <div tw="w-1/12"></div>
           <MenuBtn onClick={openModal} />
           <div tw="w-1/12"></div>
-          <SelectBtn />
+          <SelectBtn
+            onTouchStart={() => gba?.keypad.setGBAKey('SELECT', 'keydown')}
+            onTouchEnd={() => gba?.keypad.setGBAKey('SELECT', 'keyup')}
+          />
           <div tw="w-2/12"></div>
-          <StartBtn />
+          <StartBtn
+            onTouchStart={() => gba?.keypad.setGBAKey('START', 'keydown')}
+            onTouchEnd={() => gba?.keypad.setGBAKey('START', 'keyup')}
+          />
         </FlexBox>
 
         <StyledInput
