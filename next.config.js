@@ -4,9 +4,6 @@ module.exports = {
     config.resolve.fallback = { fs: false, module: false }
     return config
   },
-  env: {
-    server: 'https://localhost:8080',
-  },
   future: {
     webpack5: true,
   },
