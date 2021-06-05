@@ -22,14 +22,14 @@ const App = ({ Component, pageProps }: AppProps): JSX.Element => {
       </Head>
       <SafeHydrate>
         <Providers>
+          <style jsx global>{`
+            body {
+              margin: 0;
+              padding: 0;
+              touch-action: none;
+            }
+          `}</style>
           <Page>
-            <style jsx global>{`
-              body {
-                margin: 0;
-                background: #36393f;
-                touch-action: pan-y;
-              }
-            `}</style>
             <Component {...pageProps} />
           </Page>
         </Providers>

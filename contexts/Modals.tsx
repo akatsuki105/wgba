@@ -65,6 +65,7 @@ const StyledModalWrapper = styled.div`
   right: 0;
   bottom: 0;
   left: 0;
+  z-index: ${({ theme }) => theme.z.modal};
 `;
 
 const StyledModalBackdrop = styled.div`

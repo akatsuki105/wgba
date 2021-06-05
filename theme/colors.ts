@@ -91,3 +91,13 @@ export const purple = {
   800: '#553c9a',
   900: '#44337a',
 };
+
+export const gba = {
+  text: '#8e8e8e6d',
+  textShadow: '#f5f5f5a8',
+  boxShadow: '#f5f5f57f',
+  boxShadowA: '#ebebeb7f',
+  btn0: '#d8d8d8',
+  btn100: '#b6b6b6',
+  btnb: gray[500],
+};

@@ -1,11 +1,23 @@
 import React from 'react';
 import { styled } from 'twin.macro';
 
-export const Page: React.FC = React.memo(({ children }) => <StyledPage>{children}</StyledPage>);
+type Props = {
+  className?: string;
+};
 
-const StyledPage = styled.div`
+export const Page: React.FC<Props> = React.memo(({ className, children }) => {
+  const h = window.innerHeight;
+
+  return (
+    <StyledPage h={h} className={className}>
+      {children}
+    </StyledPage>
+  );
+});
+
+const StyledPage = styled.div<{ h: number }>`
   align-items: center;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh);
+  min-height: ${(props) => props.h}px;
 `;

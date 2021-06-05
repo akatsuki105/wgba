@@ -5,17 +5,21 @@ type Props = {
   fps?: number;
 };
 
-export const Frame: React.FC<Props> = React.memo(({ fps, children }) => (
-  <StyledDiv>
-    {fps ? <FPS>FPS: {fps}</FPS> : null}
-    {children}
-  </StyledDiv>
-));
+export const Frame: React.FC<Props> = React.memo(({ fps, children }) => {
+  const h = (window.innerHeight * 46) / 100;
 
-const StyledDiv = styled.div`
+  return (
+    <StyledDiv h={h}>
+      {fps ? <FPS>FPS: {fps}</FPS> : null}
+      {children}
+    </StyledDiv>
+  );
+});
+
+const StyledDiv = styled.div<{ h: number }>`
   /* PC */
   @media (min-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
-    margin-top: 4vh;
+    margin-top: 8%;
     margin-left: auto;
     margin-right: auto;
     width: 720px;
@@ -28,7 +32,7 @@ const StyledDiv = styled.div`
   @media (max-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
     background-color: ${({ theme }) => theme.color.black};
     width: 100vw;
-    height: 50vh;
+    height: ${(props) => props.h}px;
     display: flex;
     align-items: center;
   }

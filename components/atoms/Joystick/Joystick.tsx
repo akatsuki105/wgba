@@ -16,7 +16,9 @@ const circumference = 2 * Math.PI;
 
 export const Joystick: React.FC<Props> = React.memo(({ size = 240, className = '', set }) => {
   const ref = useRef<HTMLCanvasElement>(null);
-  const gray = useContext(ThemeContext).color.gray;
+  const grad0 = useContext(ThemeContext).color.gba.btn0;
+  const grad100 = useContext(ThemeContext).color.gba.btn100;
+  const stroke = useContext(ThemeContext).color.gba.btnb;
   const purple = useContext(ThemeContext).color.purple;
   const pressed = useRef(false);
   const internalRadius = (size - (size / 2 + 10)) / 2;
@@ -158,12 +160,12 @@ export const Joystick: React.FC<Props> = React.memo(({ size = 240, className = '
     ctx.arc(newX, newY, internalRadius, 0, circumference, false);
 
     const grd = ctx.createLinearGradient(0, 0, size, size);
-    grd.addColorStop(0, gray[600]);
-    grd.addColorStop(1, gray[400]);
+    grd.addColorStop(0, grad0);
+    grd.addColorStop(1, grad100);
     ctx.fillStyle = grd;
     ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = gray[700];
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = stroke;
     ctx.stroke();
   };
 

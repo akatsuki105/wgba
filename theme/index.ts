@@ -1,4 +1,4 @@
-import { old, black, green, gray, red, blue, white, orange, purple } from './colors';
+import { old, black, green, gray, red, blue, white, orange, purple, gba } from './colors';
 
 const theme = {
   buttonSize: {
@@ -35,6 +35,7 @@ const theme = {
       main: green[500],
     },
     white,
+    gba,
   },
   spacing: {
     0: 0,
@@ -49,8 +50,7 @@ const theme = {
     9: 96,
   },
   z: {
-    pause: 99,
-    lr: 99,
+    mobileBtn: 99,
     modal: 9999,
   },
 };
