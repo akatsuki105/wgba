@@ -7,12 +7,12 @@ type Props = {
   onTouchEnd: () => void;
 };
 
-export const LBtn: React.FC<Props> = React.memo(() => {
-  return <StyledL>L</StyledL>;
+export const LBtn: React.FC<Props> = React.memo((props) => {
+  return <StyledL {...props}>L</StyledL>;
 });
 
-export const RBtn: React.FC<Props> = React.memo(() => {
-  return <StyledR>R</StyledR>;
+export const RBtn: React.FC<Props> = React.memo((props) => {
+  return <StyledR {...props}>R</StyledR>;
 });
 
 const StyledDiv = styled(Button)`
