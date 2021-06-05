@@ -1,8 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import tw, { styled } from 'twin.macro';
 import { LBtn, RBtn } from 'components/Button';
 import { Menu, MenuItem } from 'components/Menu';
 import { FlexBox } from 'components/atoms/FlexBox';
+import { Joystick } from 'components/atoms/Joystick';
+import { JoystickContext } from 'contexts';
 import { useModal } from 'hooks';
 import { GameBoyAdvance } from 'src/gba';
 
@@ -28,6 +30,20 @@ export const Controller: React.FC<Props> = React.memo(
         <MenuItem>Cancel</MenuItem>
       </Menu>,
     );
+    const { up, down, left, right, set } = useContext(JoystickContext);
+
+    useEffect(() => {
+      gba?.keypad.setGBAKey('UP', up ? 'keydown' : 'keyup');
+    }, [up]); // eslint-disable-line
+    useEffect(() => {
+      gba?.keypad.setGBAKey('DOWN', down ? 'keydown' : 'keyup');
+    }, [down]); // eslint-disable-line
+    useEffect(() => {
+      gba?.keypad.setGBAKey('LEFT', left ? 'keydown' : 'keyup');
+    }, [left]); // eslint-disable-line
+    useEffect(() => {
+      gba?.keypad.setGBAKey('RIGHT', right ? 'keydown' : 'keyup');
+    }, [right]); // eslint-disable-line
 
     return (
       <StyledDiv>
@@ -50,59 +66,45 @@ export const Controller: React.FC<Props> = React.memo(
         </VolumeContainer>
 
         <FlexBox>
-          <ABDpadContainer column>
-            <DpadUp
-              onTouchStart={() => gba?.keypad.setGBAKey('UP', 'keydown')}
-              onTouchMove={(e) => e.preventDefault()}
-              onTouchEnd={() => gba?.keypad.setGBAKey('UP', 'keyup')}
-            />
-            <FlexBox>
-              <DpadLeft
-                onTouchStart={() => gba?.keypad.setGBAKey('LEFT', 'keydown')}
-                onTouchMove={(e) => e.preventDefault()}
-                onTouchEnd={() => gba?.keypad.setGBAKey('LEFT', 'keyup')}
-              />
-              <DpadBasic />
-              <DpadRight
-                onTouchStart={() => gba?.keypad.setGBAKey('RIGHT', 'keydown')}
-                onTouchMove={(e) => e.preventDefault()}
-                onTouchEnd={() => gba?.keypad.setGBAKey('RIGHT', 'keyup')}
-              />
-            </FlexBox>
-            <DpadDown
-              onTouchStart={() => gba?.keypad.setGBAKey('DOWN', 'keydown')}
-              onTouchMove={(e) => e.preventDefault()}
-              onTouchEnd={() => gba?.keypad.setGBAKey('DOWN', 'keyup')}
-            />
-          </ABDpadContainer>
+          <DpadContainer column>
+            <Joystick size={240} set={set} />
+          </DpadContainer>
 
-          <ABDpadContainer column>
+          <ABContainer column>
             <ABtn
               onTouchStart={() => gba?.keypad.setGBAKey('A', 'keydown')}
               onTouchMove={(e) => e.preventDefault()}
               onTouchEnd={() => gba?.keypad.setGBAKey('A', 'keyup')}
-            ></ABtn>
+            >
+              A
+            </ABtn>
             <BBtn
               onTouchStart={() => gba?.keypad.setGBAKey('B', 'keydown')}
               onTouchMove={(e) => e.preventDefault()}
               onTouchEnd={() => gba?.keypad.setGBAKey('B', 'keyup')}
-            ></BBtn>
-          </ABDpadContainer>
+            >
+              B
+            </BBtn>
+          </ABContainer>
         </FlexBox>
 
         <FlexBox>
           <div tw="w-1/12"></div>
-          <MenuBtn onClick={openModal} />
+          <MenuBtn onClick={openModal}>Menu</MenuBtn>
           <div tw="w-1/12"></div>
           <SelectBtn
             onTouchStart={() => gba?.keypad.setGBAKey('SELECT', 'keydown')}
             onTouchEnd={() => gba?.keypad.setGBAKey('SELECT', 'keyup')}
-          />
+          >
+            Select
+          </SelectBtn>
           <div tw="w-2/12"></div>
           <StartBtn
             onTouchStart={() => gba?.keypad.setGBAKey('START', 'keydown')}
             onTouchEnd={() => gba?.keypad.setGBAKey('START', 'keyup')}
-          />
+          >
+            Start
+          </StartBtn>
         </FlexBox>
 
         <StyledInput
@@ -132,79 +134,88 @@ const VolumeContainer = styled(FlexBox)`
 `;
 
 const PauseBtn = styled.div`
-  background-color: ${({ theme }) => theme.color.gray[400]};
+  ${tw`bg-gradient-to-b from-gray-300 to-gray-500`};
   margin-top: 10vh;
   width: 16px;
   height: 16px;
   border-radius: 8px;
   z-index: ${({ theme }) => theme.z.pause};
+  &:active {
+    ${tw`bg-gradient-to-b from-gray-400 to-gray-600`};
+  }
 `;
 
-const ABDpadContainer = styled(FlexBox)`
+const DpadContainer = styled(FlexBox)`
   ${tw`w-6/12`}
   height: 39vh;
+  padding-top: 4vh;
   display: flex;
   align-items: center;
   justify-content: center;
 `;
 
-const DpadBasic = styled.div`
-  background-color: ${({ theme }) => theme.color.gray[400]};
-  width: 40px;
-  height: 40px;
-`;
-
-const DpadUp = styled(DpadBasic)`
-  border-radius: 4px 4px 0 0;
-`;
-
-const DpadDown = styled(DpadBasic)`
-  border-radius: 0 0 4px 4px;
-`;
-
-const DpadRight = styled(DpadBasic)`
-  border-radius: 0 4px 4px 0;
-`;
-
-const DpadLeft = styled(DpadBasic)`
-  border-radius: 4px 0 0 4px;
+const ABContainer = styled(DpadContainer)`
+  margin-top: -10vw;
 `;
 
 const ABtn = styled.div`
-  background-color: ${({ theme }) => theme.color.gray[400]};
-  width: 40px;
-  height: 40px;
-  margin-left: 30%;
+  ${tw`bg-gradient-to-b from-gray-300 to-gray-500`};
+  color: ${({ theme }) => theme.color.gray[700]};
+  font-weight: 700;
+  width: 16vw;
+  height: 16vw;
+  ${tw`border-4 border-purple-900`}
+  border-radius: 8vw;
+  margin-left: auto;
+  margin-right: 4vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  &:active {
+    ${tw`bg-gradient-to-b from-gray-400 to-gray-600`};
+  }
 `;
 
-const BBtn = styled.div`
-  background-color: ${({ theme }) => theme.color.gray[400]};
-  width: 40px;
-  height: 40px;
-  margin-right: 30%;
+const BBtn = styled(ABtn)`
+  margin-right: 50%;
 `;
 
 const MenuBtn = styled.div`
-  background-color: ${({ theme }) => theme.color.gray[400]};
+  ${tw`bg-gradient-to-b from-gray-300 to-gray-500`};
   ${tw`w-1/12`}
   height: 20px;
+  border-radius: 8px;
+  color: ${({ theme }) => theme.color.gray[700]};
+  font-weight: 700;
+  display: flex;
+  font-size: 10px;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
 `;
 
 const StartSelectBtnBasic = styled.div`
-  background-color: ${({ theme }) => theme.color.gray[400]};
+  ${tw`bg-gradient-to-b from-gray-300 to-gray-500`};
   ${tw`w-2/12`}
   height: 20px;
+  border-radius: 8px;
   margin-top: -20px;
+  color: ${({ theme }) => theme.color.gray[700]};
+  font-weight: 700;
+  display: flex;
+  font-size: 12px;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
 `;
 
 const StartBtn = styled(StartSelectBtnBasic)`
   box-sizing: border-box;
-  padding-right: 32px;
 `;
 
 const SelectBtn = styled(StartSelectBtnBasic)`
   box-sizing: border-box;
-  padding-left: 32px;
 `;
 
 const StyledInput = styled.input`

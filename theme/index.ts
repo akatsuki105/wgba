@@ -1,4 +1,4 @@
-import { old, black, green, gray, red, blue, white, orange } from './colors';
+import { old, black, green, gray, red, blue, white, orange, purple } from './colors';
 
 const theme = {
   buttonSize: {
@@ -26,6 +26,7 @@ const theme = {
     blue,
     orange,
     green,
+    purple,
     primary: {
       light: blue[100],
       main: orange[500],
@@ -49,6 +50,7 @@ const theme = {
   },
   z: {
     pause: 99,
+    lr: 99,
     modal: 9999,
   },
 };

@@ -3,4 +3,3 @@ interface Window {
   finishDraw: any;
   queueFrame: (f: TimerHandler) => void;
 }
-
