@@ -3,3 +3,5 @@ interface Window {
   finishDraw: any;
   queueFrame: (f: TimerHandler) => void;
 }
+
+declare module '*.gba';

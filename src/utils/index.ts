@@ -13,3 +13,15 @@ export const base64ToArrayBuffer = (base64: string) => {
 export const sleep = async (ms: number) => {
   return new Promise((r) => setTimeout(r, ms));
 };
+
+export const getExtension = (s: string) => {
+  return s.substr((~-s.lastIndexOf('.') >>> 0) + 2);
+};
+
+export const appendBuffer = (buffer1: ArrayBufferLike, buffer2: ArrayBufferLike) => {
+  const tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+  tmp.set(new Uint8Array(buffer1), 0);
+  tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
+
+  return tmp.buffer;
+};

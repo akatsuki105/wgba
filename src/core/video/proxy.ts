@@ -9,6 +9,7 @@ export class MemoryProxy {
   blockSize: number;
   mask: number;
   size: number;
+  icache: any[];
 
   constructor(owner: any, size: number, blockSize: number) {
     this.owner = owner;
@@ -16,6 +17,7 @@ export class MemoryProxy {
     this.blockSize = blockSize;
     this.mask = (1 << blockSize) - 1;
     this.size = size;
+    this.icache = [];
     if (blockSize) {
       for (let i = 0; i < size >> blockSize; ++i) {
         this.blocks.push(new MemoryView(new ArrayBuffer(1 << blockSize)));

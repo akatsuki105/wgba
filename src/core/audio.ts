@@ -2,8 +2,42 @@ import { ARMCore } from './core';
 import { GameBoyAdvance } from './gba';
 import { ioAddr } from './io';
 
+const PSG_MAX = 0x80;
+const SOUND_MAX = 0x400;
+const FIFO_MAX = 0x200;
+// const SOUND_BIAS = 0x200;
+
+const dutyLookUp = [0.125, 0.25, 0.5, 0.75];
+
 export type FrostAudio = {
   nextSample: number;
+};
+
+type Channel = {
+  enabled: boolean;
+  playing: boolean;
+  sample: number;
+  duty: number;
+  lfsr: number;
+  width: number;
+  increment: number;
+  step: number;
+  initialVolume: number;
+  volume: number;
+  frequency: number;
+  interval: number;
+  sweepSteps: number;
+  sweepIncrement: number;
+  sweepInterval: number;
+  doSweep: boolean;
+  raise: number;
+  lower: number;
+  nextStep: number;
+  timed: boolean;
+  length: number;
+  end: number;
+  next: number;
+  nextSweep: number;
 };
 
 export class GameBoyAdvanceAudio {
@@ -18,9 +52,6 @@ export class GameBoyAdvanceAudio {
   jsAudio: ScriptProcessorNode | null;
   masterEnable: boolean;
   masterVolume: number;
-  SOUND_MAX: number;
-  FIFO_MAX: number;
-  PSG_MAX: number;
 
   fifoA: number[];
   fifoB: number[];
@@ -48,8 +79,7 @@ export class GameBoyAdvanceAudio {
   soundTimerA: number;
   soundTimerB: number;
   soundRatio: number;
-  soundBias: number;
-  squareChannels: any[];
+  squareChannels: Channel[];
   waveData: Uint8Array;
   channel3Dimension: number;
   channel3Bank: number;
@@ -63,7 +93,7 @@ export class GameBoyAdvanceAudio {
   channel3Sample: number;
   channel3Write: boolean;
   cpuFrequency: number;
-  channel4: any;
+  channel4: Channel;
 
   nextEvent: number;
 
@@ -85,10 +115,9 @@ export class GameBoyAdvanceAudio {
     this.cpu = cpu;
     this.core = core;
 
+    this.bufferSize = 4096;
     if (window.AudioContext) {
       this.context = new AudioContext();
-      this.bufferSize = 0;
-      this.bufferSize = 4096;
       this.maxSamples = this.bufferSize << 2;
       this.buffers = [new Float32Array(this.maxSamples), new Float32Array(this.maxSamples)];
       this.sampleMask = this.maxSamples - 1;
@@ -97,7 +126,6 @@ export class GameBoyAdvanceAudio {
         this.audioProcess(e);
       };
     } else {
-      this.bufferSize = 4096;
       this.buffers = [new Float32Array(0), new Float32Array(0)];
       this.context = null;
       this.maxSamples = 0;
@@ -107,10 +135,6 @@ export class GameBoyAdvanceAudio {
 
     this.masterEnable = false;
     this.masterVolume = 1.0;
-
-    this.SOUND_MAX = 0x400;
-    this.FIFO_MAX = 0x200;
-    this.PSG_MAX = 0x080;
 
     this.fifoA = [];
     this.fifoB = [];
@@ -144,7 +168,6 @@ export class GameBoyAdvanceAudio {
     this.soundTimerB = 0;
 
     this.soundRatio = 1;
-    this.soundBias = 0x200;
     this.squareChannels = [];
 
     this.waveData = new Uint8Array(32);
@@ -161,7 +184,32 @@ export class GameBoyAdvanceAudio {
     this.channel3Write = false;
 
     this.cpuFrequency = this.core.irq?.FREQUENCY || 0;
-    this.channel4 = null;
+    this.channel4 = {
+      enabled: false,
+      playing: false,
+      sample: 0,
+      duty: 0,
+      lfsr: 0,
+      width: 15,
+      interval: this.cpuFrequency / 524288,
+      increment: 0,
+      step: 0,
+      initialVolume: 0,
+      volume: 0,
+      frequency: 0,
+      sweepSteps: 0,
+      sweepIncrement: 0,
+      sweepInterval: 0,
+      doSweep: false,
+      raise: 0,
+      lower: 0,
+      nextStep: 0,
+      timed: false,
+      length: 0,
+      end: 0,
+      next: 0,
+      nextSweep: 0,
+    };
 
     this.nextEvent = 0;
 
@@ -219,7 +267,6 @@ export class GameBoyAdvanceAudio {
     this.soundTimerB = 0;
 
     this.soundRatio = 1;
-    this.soundBias = 0x200;
 
     this.squareChannels = [];
     for (let i = 0; i < 2; ++i) {
@@ -244,6 +291,10 @@ export class GameBoyAdvanceAudio {
         timed: false,
         length: 0,
         end: 0,
+        lfsr: 0,
+        width: 0,
+        next: 0,
+        nextSweep: 0,
       };
     }
 
@@ -262,7 +313,10 @@ export class GameBoyAdvanceAudio {
     this.cpuFrequency = this.core.irq.FREQUENCY;
 
     this.channel4 = {
+      enabled: false,
+      playing: false,
       sample: 0,
+      duty: 0,
       lfsr: 0,
       width: 15,
       interval: this.cpuFrequency / 524288,
@@ -270,10 +324,19 @@ export class GameBoyAdvanceAudio {
       step: 0,
       initialVolume: 0,
       volume: 0,
+      frequency: 0,
+      sweepSteps: 0,
+      sweepIncrement: 0,
+      sweepInterval: 0,
+      doSweep: false,
+      raise: 0,
+      lower: 0,
       nextStep: 0,
       timed: false,
       length: 0,
       end: 0,
+      next: 0,
+      nextSweep: 0,
     };
 
     this.nextEvent = 0;
@@ -324,15 +387,15 @@ export class GameBoyAdvanceAudio {
     }
 
     if (cycles >= this.nextEvent) {
-      let channel = this.squareChannels[0];
+      const chan0 = this.squareChannels[0];
       this.nextEvent = Infinity;
-      if (channel.playing) {
-        this.updateSquareChannel(channel, cycles);
+      if (chan0.playing) {
+        this.updateSquareChannel(chan0, cycles);
       }
 
-      channel = this.squareChannels[1];
-      if (channel.playing) {
-        this.updateSquareChannel(channel, cycles);
+      const chan1 = this.squareChannels[1];
+      if (chan1.playing) {
+        this.updateSquareChannel(chan1, cycles);
       }
 
       if (this.enableChannel3 && this.playingChannel3) {
@@ -461,22 +524,24 @@ export class GameBoyAdvanceAudio {
     if (value & 0x8000) this.fifoB = [];
   }
 
-  resetSquareChannel(channel: any) {
+  resetSquareChannel(channel: Channel) {
     if (channel.step) {
       channel.nextStep = this.cpu.cycles + channel.step;
     }
+
     if (channel.enabled && !channel.playing) {
       channel.raise = this.cpu.cycles;
-      channel.lower = channel.raise + channel.duty * channel.interval;
+      channel.lower = channel.raise + channel.duty * channel.interval; // lower > raise
       channel.end = this.cpu.cycles + channel.length;
       this.nextEvent = this.cpu.cycles;
     }
+
     channel.playing = channel.enabled;
     this.updateTimers();
     this.core.irq.pollNextEvent();
   }
 
-  setSquareChannelEnabled(channel: any, enable: any) {
+  setSquareChannelEnabled(channel: Channel, enable: any) {
     if (!(channel.enabled && channel.playing) && enable) {
       channel.enabled = !!enable;
       this.updateTimers();
@@ -499,20 +564,7 @@ export class GameBoyAdvanceAudio {
   writeSquareChannelDLE(channelId: number, value: number) {
     const channel = this.squareChannels[channelId];
     const duty = (value >> 6) & 0x3;
-    switch (duty) {
-      case 0:
-        channel.duty = 0.125;
-        break;
-      case 1:
-        channel.duty = 0.25;
-        break;
-      case 2:
-        channel.duty = 0.5;
-        break;
-      case 3:
-        channel.duty = 0.75;
-        break;
-    }
+    channel.duty = dutyLookUp[duty];
     this.writeChannelLE(channel, value);
     this.resetSquareChannel(channel);
   }
@@ -530,7 +582,7 @@ export class GameBoyAdvanceAudio {
     }
   }
 
-  updateSquareChannel(channel: any, cycles: number) {
+  updateSquareChannel(channel: Channel, cycles: number) {
     if (channel.timed && cycles >= channel.end) {
       channel.playing = false;
 
@@ -554,7 +606,7 @@ export class GameBoyAdvanceAudio {
     if (cycles >= channel.raise) {
       channel.sample = channel.volume;
       channel.lower = channel.raise + channel.duty * channel.interval;
-      channel.raise += channel.interval;
+      channel.raise += channel.interval; // raise > lower
     } else if (cycles >= channel.lower) {
       channel.sample = -channel.volume;
       channel.lower += channel.interval;
@@ -649,6 +701,9 @@ export class GameBoyAdvanceAudio {
     }
   }
 
+  /**
+   * write to SOUND4CNT_LO
+   */
   writeChannel4LE(value: number) {
     this.writeChannelLE(this.channel4, value);
     this.resetChannel4();
@@ -691,14 +746,17 @@ export class GameBoyAdvanceAudio {
     this.core.irq.pollNextEvent();
   }
 
-  writeChannelLE(channel: any, value: number) {
+  /**
+   * SOUND1CNT_H or SOUND2CNT_L or SOUND4CNT_L
+   */
+  writeChannelLE(channel: Channel, value: number) {
     channel.length = this.cpuFrequency * ((0x40 - (value & 0x3f)) / 256);
     channel.increment = value & 0x0800 ? 1 / 16 : -1 / 16;
     channel.initialVolume = ((value >> 12) & 0xf) / 16;
     channel.step = this.cpuFrequency * (((value >> 8) & 0x7) / 64);
   }
 
-  updateEnvelope(channel: any, cycles: number) {
+  updateEnvelope(channel: Channel, cycles: number) {
     if (channel.step) {
       if (cycles >= channel.nextStep) {
         channel.volume += channel.increment;
@@ -768,50 +826,49 @@ export class GameBoyAdvanceAudio {
 
   sample() {
     let [sampleLeft, sampleRight] = [0, 0];
-    let sample, channel;
 
-    channel = this.squareChannels[0];
-    if (channel.playing) {
-      sample = channel.sample * this.soundRatio * this.PSG_MAX;
+    const chan0 = this.squareChannels[0];
+    if (chan0.playing) {
+      const sample = chan0.sample * this.soundRatio * PSG_MAX;
       if (this.enabledLeft & 0x1) sampleLeft += sample;
       if (this.enabledRight & 0x1) sampleRight += sample;
     }
 
-    channel = this.squareChannels[1];
-    if (channel.playing) {
-      sample = channel.sample * this.soundRatio * this.PSG_MAX;
+    const chan1 = this.squareChannels[1];
+    if (chan1.playing) {
+      const sample = chan1.sample * this.soundRatio * PSG_MAX;
       if (this.enabledLeft & 0x2) sampleLeft += sample;
       if (this.enabledRight & 0x2) sampleRight += sample;
     }
 
     if (this.playingChannel3) {
-      sample = this.channel3Sample * this.soundRatio * this.channel3Volume * this.PSG_MAX;
+      const sample = this.channel3Sample * this.soundRatio * this.channel3Volume * PSG_MAX;
       if (this.enabledLeft & 0x4) sampleLeft += sample;
       if (this.enabledRight & 0x4) sampleRight += sample;
     }
 
     if (this.playingChannel4) {
-      sample = this.channel4.sample * this.soundRatio * this.PSG_MAX;
+      const sample = this.channel4.sample * this.soundRatio * PSG_MAX;
       if (this.enabledLeft & 0x8) sampleLeft += sample;
       if (this.enabledRight & 0x8) sampleRight += sample;
     }
 
     if (this.enableChannelA) {
-      sample = this.fifoASample * this.FIFO_MAX * this.ratioChannelA;
+      const sample = this.fifoASample * FIFO_MAX * this.ratioChannelA;
       if (this.enableLeftChannelA) sampleLeft += sample;
       if (this.enableRightChannelA) sampleRight += sample;
     }
 
     if (this.enableChannelB) {
-      sample = this.fifoBSample * this.FIFO_MAX * this.ratioChannelB;
+      const sample = this.fifoBSample * FIFO_MAX * this.ratioChannelB;
       if (this.enableLeftChannelB) sampleLeft += sample;
       if (this.enableRightChannelB) sampleRight += sample;
     }
 
     const samplePointer = this.samplePointer;
-    sampleLeft *= this.masterVolume / this.SOUND_MAX;
+    sampleLeft *= this.masterVolume / SOUND_MAX;
     sampleLeft = Math.max(Math.min(sampleLeft, 1), -1);
-    sampleRight *= this.masterVolume / this.SOUND_MAX;
+    sampleRight *= this.masterVolume / SOUND_MAX;
     sampleRight = Math.max(Math.min(sampleRight, 1), -1);
     if (this.buffers) {
       this.buffers[0][samplePointer] = sampleLeft;
@@ -820,7 +877,7 @@ export class GameBoyAdvanceAudio {
     this.samplePointer = (samplePointer + 1) & this.sampleMask;
   }
 
-  audioProcess(audioProcessingEvent: any) {
+  audioProcess(audioProcessingEvent: AudioProcessingEvent) {
     const left = audioProcessingEvent.outputBuffer.getChannelData(0);
     const right = audioProcessingEvent.outputBuffer.getChannelData(1);
     if (this.masterEnable) {

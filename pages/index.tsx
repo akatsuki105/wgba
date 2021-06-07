@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Controller } from 'components/Controller';
 import { Frame } from 'components/Frame';
 import { Screen } from 'components/Screen';
+import { canvasSize } from 'components/atoms/Joystick';
+import { JoystickProvider } from 'contexts';
 import { useResponsive } from 'hooks/useResponsive';
-import { GameBoyAdvance, logLvs } from 'src/gba';
+import { GameBoyAdvance, logLvs } from 'src/core/gba';
+import { ROMHeader } from 'src/storage';
 import { base64ToArrayBuffer } from 'src/utils';
 
 let gba: GameBoyAdvance | null | undefined;
@@ -32,10 +35,10 @@ const Index = () => {
   const media = useResponsive();
 
   const [isRun, setIsRun] = useState<boolean>(false);
-  const run = (file: Blob) => {
+  const run = (file: File | ROMHeader) => {
     if (!gba) return;
 
-    gba.loadRomFromFile(file, (result: boolean) => {
+    const callback = (result: boolean) => {
       if (!gba) return;
 
       if (result) {
@@ -46,7 +49,13 @@ const Index = () => {
 
         gba.runStable();
       }
-    });
+    };
+
+    if (file instanceof File) {
+      gba.loadRomFromFile(file, callback);
+    } else {
+      gba.loadRomFromStorage(file, callback);
+    }
   };
 
   const [paused, setPaused] = useState<boolean>(false);
@@ -72,7 +81,7 @@ const Index = () => {
 
   const [fps, setFPS] = useState<number>(0);
   useEffect(() => {
-    const w = new Worker(new URL('../src/video/worker.ts', import.meta.url), { type: 'module' });
+    const w = new Worker(new URL('../src/core/video/worker.ts', import.meta.url));
     try {
       gba = new GameBoyAdvance(w, setFPS as (f: number) => void);
       gba.keypad.eatInput = true;
@@ -105,15 +114,16 @@ const Index = () => {
         <Screen ref={screenRef} />
       </Frame>
 
-      <Controller
-        gba={gba || undefined}
-        isRun={isRun}
-        mute={mute}
-        turnOn={run}
-        turnOff={powerOff}
-        togglePause={togglePause}
-        toggleSound={toggleSound}
-      />
+      <JoystickProvider size={canvasSize}>
+        <Controller
+          gba={gba || undefined}
+          mute={mute}
+          turnOn={run}
+          turnOff={powerOff}
+          togglePause={togglePause}
+          toggleSound={toggleSound}
+        />
+      </JoystickProvider>
     </div>
   );
 };

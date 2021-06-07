@@ -23,7 +23,7 @@ const defaultContext = {
   set: (xy: [number, number]) => {},
 };
 
-const threshold = 0.3;
+const threshold = 0.2;
 
 export const JoystickContext = createContext<JoystickContext>(defaultContext);
 

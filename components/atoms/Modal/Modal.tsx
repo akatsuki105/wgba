@@ -1,17 +1,13 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
 
-export interface ModalProps {
+export type ModalProps = {
   onDismiss?: () => void;
   className?: string;
-}
+};
 
 export const Modal: React.FC<ModalProps> = ({ children, className = '' }) => {
-  return (
-    <StyledResponsiveWrapper className={className}>
-      <StyledModal>{children}</StyledModal>
-    </StyledResponsiveWrapper>
-  );
+  return <StyledResponsiveWrapper className={className}>{children}</StyledResponsiveWrapper>;
 };
 
 const mobileKeyframes = keyframes`
@@ -42,15 +38,4 @@ const StyledResponsiveWrapper = styled.div`
     max-height: calc(100% - ${(props) => props.theme.spacing[4]}px);
     animation: ${mobileKeyframes} 0.3s forwards ease-out;
   }
-`;
-
-const StyledModal = styled.div`
-  padding: 0 20px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  width: 100%;
-  min-height: 0;
-  max-height: 100%;
-  overflow-y: scroll;
 `;

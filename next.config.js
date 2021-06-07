@@ -5,6 +5,17 @@ module.exports = {
     config.output.chunkFilename = isServer
       ? `${dev ? "[name]" : "[name].[fullhash]"}.js`
       : `static/chunks/${dev ? "[name]" : "[name].[fullhash]"}.js`;
+
+    config.module.rules.push({
+      test: /\.gba/,
+      use: [
+        {
+          loader: 'arraybuffer-loader',
+        },
+      ],
+    })
+
+    config.experiments = { topLevelAwait: true };
     return config
   },
   future: {

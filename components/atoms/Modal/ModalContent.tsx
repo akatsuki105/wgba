@@ -1,12 +1,22 @@
 import React from 'react';
 import { styled } from 'twin.macro';
 
-export const ModalContent: React.FC = ({ children }) => {
-  return <StyledModalContent>{children}</StyledModalContent>;
+type Props = {
+  className?: string;
+};
+
+export const ModalContent: React.FC<Props> = ({ className, children }) => {
+  return <StyledModalContent className={className}>{children}</StyledModalContent>;
 };
 
 const StyledModalContent = styled.div`
-  padding: ${(props) => props.theme.spacing[4]}px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: scroll;
   @media (max-width: ${(props) => props.theme.breakpoints.md}px) {
     flex: 1;
     overflow: auto;

@@ -7,14 +7,16 @@ import { ThemeContext } from 'styled-components';
 import { styled } from 'twin.macro';
 
 type Props = {
-  size?: number;
+  size: number;
   className?: string;
   set: (xy: [number, number]) => void;
 };
 
+export const canvasSize = 240;
+
 const circumference = 2 * Math.PI;
 
-export const Joystick: React.FC<Props> = React.memo(({ size = 240, className = '', set }) => {
+export const Joystick: React.FC<Props> = React.memo(({ size, className = '', set }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const grad0 = useContext(ThemeContext).color.gba.btn0;
   const grad100 = useContext(ThemeContext).color.gba.btn100;

@@ -1,3 +1,7 @@
+import md5 from 'md5';
+import { fetchROMInfo } from '../rom';
+import { ROMHeader, getROMData, setROM } from '../storage';
+import { appendBuffer, getExtension } from '../utils';
 import { FrostAudio, GameBoyAdvanceAudio } from './audio';
 import { ARMCore } from './core';
 import { FrostIO, GameBoyAdvanceIO } from './io';
@@ -6,6 +10,7 @@ import { GameBoyAdvanceKeypad } from './keypad';
 import { GameBoyAdvanceMMU, FrostMMU, Cart, defaultCart, region } from './mmu';
 import { GameBoyAdvanceSIO } from './sio';
 import { FrostVideo, GameBoyAdvanceVideo } from './video';
+import goomba from 'public/goomba.gba';
 
 type FrostGBA = {
   cpu: any;
@@ -129,14 +134,54 @@ export class GameBoyAdvance {
     return !!this.rom;
   }
 
-  loadRomFromFile(romFile: Blob, callback: (b: boolean) => void) {
+  loadRomFromFile(romFile: File, callback: (b: boolean) => void) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       if (!(e.target?.result && e.target.result instanceof ArrayBuffer)) return;
-      const result = this.setRom(e.target?.result);
+
+      const ext = getExtension(romFile.name);
+      let result = false;
+      switch (ext) {
+        case 'gb':
+        case 'gbc':
+          const bin = appendBuffer(goomba, e.target.result);
+          result = this.setRom(bin);
+          break;
+        case 'gba':
+          result = this.setRom(e.target?.result);
+          break;
+        default:
+          this.ERROR('Invalid ROM file type');
+      }
+
+      if (result) {
+        const romdata = fetchROMInfo(e.target?.result);
+        const title = romdata.caption || romdata.title;
+        const ext = getExtension(romFile.name);
+        const hash = md5(new Uint8Array(e.target?.result));
+        setROM({ title, ext, hash }, e.target?.result);
+      }
+
       callback(result);
     };
     reader.readAsArrayBuffer(romFile);
+  }
+
+  async loadRomFromStorage(h: ROMHeader, callback: (b: boolean) => void) {
+    let result = false;
+    switch (h.ext) {
+      case 'gb':
+      case 'gbc':
+        const bin = appendBuffer(goomba, await getROMData(h.hash));
+        result = this.setRom(bin);
+        break;
+      case 'gba':
+        result = this.setRom(await getROMData(h.hash));
+        break;
+      default:
+        this.ERROR('Invalid ROM file type');
+    }
+    callback(result);
   }
 
   reset() {
@@ -391,6 +436,7 @@ export class GameBoyAdvance {
   }
 
   ERROR(error: string) {
+    console.error(error);
     if (this.logLevel & logLvs.ERROR) this.log(logLvs.ERROR, error);
   }
 

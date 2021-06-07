@@ -35,26 +35,35 @@ export class MemoryView {
   }
 
   load8(offset: number) {
+    if ((offset & this.mask8) >= this.view.byteLength) return 0;
+
     return this.view.getInt8(offset & this.mask8);
   }
 
   load16(offset: number) {
+    if ((offset & this.mask) >= this.view.byteLength) return 0;
+
     // Unaligned 16-bit loads are unpredictable...let's just pretend they work
     return this.view.getInt16(offset & this.mask, true);
   }
 
   loadU8(offset: number) {
+    if ((offset & this.mask8) >= this.view.byteLength) return 0;
+
     return this.view.getUint8(offset & this.mask8);
   }
 
   loadU16(offset: number) {
     // Unaligned 16-bit loads are unpredictable...let's just pretend they work
+    if ((offset & this.mask) >= this.view.byteLength) return 0;
+
     return this.view.getUint16(offset & this.mask, true);
   }
 
   load32(offset: number) {
     // Unaligned 32-bit loads are "rotated" so they make some semblance of sense
     const rotate = (offset & 3) << 3;
+    if ((offset & this.mask32) >= this.view.byteLength) return 0;
     const mem = this.view.getInt32(offset & this.mask32, true);
 
     return (mem >>> rotate) | (mem << (32 - rotate));

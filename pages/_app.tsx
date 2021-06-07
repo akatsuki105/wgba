@@ -4,7 +4,7 @@ import Head from 'next/head';
 import React from 'react';
 import { ThemeProvider } from 'styled-components';
 import { Page } from 'components/atoms/Page';
-import { JoystickProvider, ModalsProvider } from 'contexts';
+import { ModalsProvider } from 'contexts';
 import theme from 'theme';
 import 'tailwind.css';
 
@@ -41,9 +41,7 @@ const App = ({ Component, pageProps }: AppProps): JSX.Element => {
 const Providers: React.FC = React.memo(({ children }) => {
   return (
     <ThemeProvider theme={theme}>
-      <ModalsProvider>
-        <JoystickProvider size={240}>{children}</JoystickProvider>
-      </ModalsProvider>
+      <ModalsProvider>{children}</ModalsProvider>
     </ThemeProvider>
   );
 });

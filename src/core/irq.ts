@@ -519,6 +519,12 @@ export class GameBoyAdvanceInterruptHandler {
 
         return;
       }
+      case 0x0d: {
+        // GetBiosChecksum
+        this.cpu.gprs[0] = 0xbaae187f;
+        this.cpu.gprs[1] = 1;
+        this.cpu.gprs[3] = 0x00004000;
+      }
       case 0x0e: {
         // BgAffineSet
         let i = this.cpu.gprs[2];

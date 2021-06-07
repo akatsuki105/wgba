@@ -1,37 +1,61 @@
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import tw, { styled } from 'twin.macro';
-import { LBtn, RBtn } from 'components/Button';
+import { BaseButton, LBtn, MenuBtn, RBtn, StartSelectBtn } from 'components/Button';
 import { Menu, MenuItem } from 'components/Menu';
-import { Button } from 'components/atoms/Button';
 import { FlexBox } from 'components/atoms/FlexBox';
-import { Joystick } from 'components/atoms/Joystick';
+import { canvasSize, Joystick } from 'components/atoms/Joystick';
 import { JoystickContext } from 'contexts';
 import { useModal } from 'hooks';
-import { GameBoyAdvance } from 'src/gba';
+import { GameBoyAdvance } from 'src/core/gba';
+import { romInfoTable } from 'src/rom';
+import { getROMHeaders, ROMHeader } from 'src/storage';
 
 type Props = {
   gba?: GameBoyAdvance;
-  isRun: boolean;
   mute: boolean;
-  turnOn: (f: File) => void;
+  turnOn: (f: File | ROMHeader) => void;
   turnOff: () => void;
   togglePause: () => void;
   toggleSound: () => void;
 };
 
 export const Controller: React.FC<Props> = React.memo(
-  ({ gba, isRun, mute, turnOn, turnOff, togglePause, toggleSound }) => {
+  ({ gba, mute, turnOn, turnOff, togglePause, toggleSound }) => {
     const h = (window.innerHeight * 54) / 100;
     const m = h - 380 > 0 ? h - 380 : 0;
     const ref = useRef<HTMLInputElement>(null);
-    const [_, openModal] = useModal(
+
+    const [romHeaders, setROMHeaders] = useState<ROMHeader[]>([]);
+    useEffect(() => {
+      getROMHeaders().then((val) => {
+        setROMHeaders(val);
+      });
+    }, []);
+
+    const [_, openROMModal] = useModal(
       <Menu>
-        {/* <MenuItem onClick={() => {}}>Load ROM</MenuItem> */}
+        {romHeaders.map((h) => {
+          const romdata = romInfoTable[h.hash];
+          const title = romdata ? romdata.caption || romdata.title : h.title;
+
+          return (
+            <MenuItem key={h.hash} onClick={() => turnOn(h)}>
+              {title}
+            </MenuItem>
+          );
+        })}
+      </Menu>,
+      'romModal',
+    );
+    const [__, openMenuModal] = useModal(
+      <Menu>
+        <MenuItem onClick={() => openROMModal()}>Select loaded ROM</MenuItem>
         <MenuItem onClick={() => ref.current?.click()}>Add new ROM</MenuItem>
         <MenuItem onClick={turnOff}>Quit Game</MenuItem>
         <MenuItem onClick={toggleSound}>{mute ? 'Play sound' : 'Mute'}</MenuItem>
         <MenuItem>Cancel</MenuItem>
       </Menu>,
+      'menuModal',
     );
     const { up, down, left, right, set } = useContext(JoystickContext);
 
@@ -70,7 +94,7 @@ export const Controller: React.FC<Props> = React.memo(
 
         <FlexBox>
           <DpadContainer column>
-            <Joystick size={240} set={set} />
+            <Joystick size={canvasSize} set={set} />
           </DpadContainer>
 
           <DpadContainer column>
@@ -93,7 +117,7 @@ export const Controller: React.FC<Props> = React.memo(
 
         <StyledFlexBox m={m}>
           <div tw="w-1/12"></div>
-          <MenuBtn onClick={openModal}>Menu</MenuBtn>
+          <MenuBtn onClick={openMenuModal}>Menu</MenuBtn>
           <div tw="w-1/12"></div>
           <StartSelectBtn
             onTouchStart={() => gba?.keypad.setGBAKey('SELECT', 'keydown')}
@@ -112,7 +136,7 @@ export const Controller: React.FC<Props> = React.memo(
 
         <StyledInput
           type="file"
-          accept=".gba"
+          accept=".gba,.gb,.gbc"
           ref={ref}
           onChange={(e) => {
             e.target.files && turnOn(e.target.files[0]);
@@ -137,28 +161,7 @@ const VolumeContainer = styled(FlexBox)`
   height: 2%;
 `;
 
-const StyledBtn = styled(Button)`
-  user-select: none;
-  font-weight: bold;
-  color: ${({ theme }) => theme.color.gba.text};
-  background-image: linear-gradient(
-    ${({ theme }) => theme.color.gba.btn0} 0%,
-    ${({ theme }) => theme.color.gba.btn100} 100%
-  );
-  text-shadow: 1px 1px 1px ${({ theme }) => theme.color.gba.textShadow};
-  box-shadow: inset 0 2px 0 ${({ theme }) => theme.color.gba.boxShadow} 0 2px 2px
-    rgba(0, 0, 0, 0.19);
-  border-bottom: solid 2px ${({ theme }) => theme.color.gba.btnb};
-
-  &:active {
-    box-shadow: inset 0 1px 0 ${({ theme }) => theme.color.gba.boxShadowA} 0 2px 2px
-      rgba(0, 0, 0, 0.19);
-    border-bottom: none;
-    transform: translateY(1px);
-  }
-`;
-
-const PauseBtn = styled(StyledBtn)`
+const PauseBtn = styled(BaseButton)`
   margin-top: 16%;
   width: 16px;
   height: 16px;
@@ -175,7 +178,7 @@ const DpadContainer = styled(FlexBox)`
   justify-content: center;
 `;
 
-const ABtn = styled(StyledBtn)`
+const ABtn = styled(BaseButton)`
   width: 16vw;
   height: 16vw;
   border-radius: 50%;
@@ -193,30 +196,6 @@ const BBtn = styled(ABtn)`
 const StyledFlexBox = styled(FlexBox)<{ m: number }>`
   margin-top: ${(props) => props.m}px;
   margin-bottom: 0;
-`;
-
-const MenuBtn = styled(StyledBtn)`
-  ${tw`w-1/12`}
-  height: 20px;
-  border-radius: 6px;
-  display: flex;
-  font-size: 10px;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-`;
-
-const StartSelectBtn = styled(StyledBtn)`
-  ${tw`w-2/12`}
-  height: 20px;
-  margin-top: -20px;
-  display: flex;
-  border-radius: 6px;
-  font-size: 12px;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-  z-index: ${({ theme }) => theme.z.mobileBtn};
 `;
 
 const StyledInput = styled.input`
