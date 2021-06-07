@@ -83,16 +83,19 @@ export class SRAMSavedata extends MemoryView {
   }
 
   store8(offset: number, value: number) {
+    if (offset >= this.view.byteLength) return;
     this.view.setInt8(offset, value);
     this.writePending = true;
   }
 
   store16(offset: number, value: number) {
+    if (offset >= this.view.byteLength) return;
     this.view.setInt16(offset, value, true);
     this.writePending = true;
   }
 
   store32(offset: number, value: number) {
+    if (offset >= this.view.byteLength) return;
     this.view.setInt32(offset, value, true);
     this.writePending = true;
   }

@@ -5,6 +5,8 @@ import { GameBoyAdvanceIO, ioAddr } from './io';
 import { MemoryBlock, region, size } from './mmu';
 import { GameBoyAdvanceVideo } from './video';
 
+export const CPU_FREQUENCY = 16.78 * 1000 * 1000;
+
 type Timer = {
   reload: number;
   oldReload: number;
@@ -80,8 +82,6 @@ export const irqIdx = {
 } as const;
 
 export class GameBoyAdvanceInterruptHandler {
-  FREQUENCY: number;
-
   enable: boolean;
   enabledIRQs: number;
   interruptFlags: number;
@@ -108,8 +108,6 @@ export class GameBoyAdvanceInterruptHandler {
   ) {
     this.cpu = cpu;
     this.core = core;
-
-    this.FREQUENCY = 0x1000000;
 
     this.enable = false;
     this.enabledIRQs = 0;

@@ -7,10 +7,10 @@ Play GBA game on your Web browser!
 - Fix sound ch1 & ch2 bug
 - Responsive
 - PWA
-- ROM management using localForage
 - Keymap setting by player
 - Support GamePad
 - Native support DMG/CGB ROM (using goombacolor now)
+- Support NES ROM using PocketNES
 
 ## Credits
 

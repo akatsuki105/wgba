@@ -119,10 +119,10 @@ export class GameBoyAdvance {
     this.mmu.loadBios(bios, real);
   }
 
-  setRom(rom: ArrayBufferLike): boolean {
+  setRom(rom: ArrayBufferLike, md5: string): boolean {
     this.reset();
 
-    this.rom = this.mmu.loadRom(rom, true);
+    this.rom = this.mmu.loadRom(rom, true, md5);
     if (!this.rom) return false;
 
     this.retrieveSavedata();
@@ -140,15 +140,16 @@ export class GameBoyAdvance {
       if (!(e.target?.result && e.target.result instanceof ArrayBuffer)) return;
 
       const ext = getExtension(romFile.name);
+      const hash = md5(new Uint8Array(e.target?.result));
       let result = false;
       switch (ext) {
         case 'gb':
         case 'gbc':
           const bin = appendBuffer(goomba, e.target.result);
-          result = this.setRom(bin);
+          result = this.setRom(bin, hash);
           break;
         case 'gba':
-          result = this.setRom(e.target?.result);
+          result = this.setRom(e.target?.result, hash);
           break;
         default:
           this.ERROR('Invalid ROM file type');
@@ -158,7 +159,6 @@ export class GameBoyAdvance {
         const romdata = fetchROMInfo(e.target?.result);
         const title = romdata.caption || romdata.title;
         const ext = getExtension(romFile.name);
-        const hash = md5(new Uint8Array(e.target?.result));
         setROM({ title, ext, hash }, e.target?.result);
       }
 
@@ -173,10 +173,10 @@ export class GameBoyAdvance {
       case 'gb':
       case 'gbc':
         const bin = appendBuffer(goomba, await getROMData(h.hash));
-        result = this.setRom(bin);
+        result = this.setRom(bin, h.hash);
         break;
       case 'gba':
-        result = this.setRom(await getROMData(h.hash));
+        result = this.setRom(await getROMData(h.hash), h.hash);
         break;
       default:
         this.ERROR('Invalid ROM file type');
@@ -377,7 +377,7 @@ export class GameBoyAdvance {
     try {
       const sram = this.mmu.save;
       const storage = window.localStorage;
-      storage[SYS_ID + '.' + this.mmu.cart.code] = this.encodeBase64(sram.view);
+      storage[SYS_ID + '.' + this.mmu.cart.md5] = this.encodeBase64(sram.view);
     } catch (e) {
       this.WARN('Could not store savedata! ' + e);
     }
@@ -386,7 +386,7 @@ export class GameBoyAdvance {
   retrieveSavedata(): boolean {
     try {
       const storage = window.localStorage;
-      const data = storage[SYS_ID + '.' + this.mmu.cart.code];
+      const data = storage[SYS_ID + '.' + this.mmu.cart.md5];
       if (data) {
         this.decodeSavedata(data);
 

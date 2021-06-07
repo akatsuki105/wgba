@@ -70,14 +70,17 @@ export class MemoryView {
   }
 
   store8(offset: number, value: number) {
+    if ((offset & this.mask8) >= this.view.byteLength) return;
     this.view.setInt8(offset & this.mask8, value);
   }
 
   store16(offset: number, value: number) {
+    if ((offset & this.mask16) >= this.view.byteLength) return;
     this.view.setInt16(offset & this.mask16, value, true);
   }
 
   store32(offset: number, value: number) {
+    if ((offset & this.mask32) >= this.view.byteLength) return;
     this.view.setInt32(offset & this.mask32, value, true);
   }
 
@@ -235,6 +238,7 @@ export type Cart = {
   maker: string;
   memory: ArrayBufferLike;
   saveType: string;
+  md5: string;
 };
 
 export const defaultCart = {
@@ -243,6 +247,7 @@ export const defaultCart = {
   maker: '',
   memory: new ArrayBuffer(1),
   saveType: '',
+  md5: '',
 };
 
 export type FrostMMU = {
@@ -465,9 +470,10 @@ export class GameBoyAdvanceMMU {
     this.bios.real = !!real;
   }
 
-  loadRom(rom: ArrayBufferLike, process: boolean): Cart {
+  loadRom(rom: ArrayBufferLike, process: boolean, md5: string): Cart {
     const cart = defaultCart;
     cart.memory = rom;
+    cart.md5 = md5;
 
     const lo = new ROMView(rom, 0);
     if (lo.view.getUint8(0xb2) != 0x96) return cart; // Not a valid ROM
@@ -609,7 +615,7 @@ export class GameBoyAdvanceMMU {
 
   store8(offset: number, value: number) {
     const maskedOffset = offset & 0x00ffffff;
-    const memory = this.memory[offset >>> this.BASE_OFFSET];
+    const memory = this.memory[offset >>> this.BASE_OFFSET] as MemoryView;
     memory.store8(maskedOffset, value);
     memory.invalidatePage(maskedOffset);
   }

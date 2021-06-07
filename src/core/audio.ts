@@ -1,6 +1,7 @@
 import { ARMCore } from './core';
 import { GameBoyAdvance } from './gba';
 import { ioAddr } from './io';
+import { CPU_FREQUENCY } from './irq';
 
 const PSG_MAX = 0x80;
 const SOUND_MAX = 0x400;
@@ -183,7 +184,7 @@ export class GameBoyAdvanceAudio {
     this.channel3Sample = 0;
     this.channel3Write = false;
 
-    this.cpuFrequency = this.core.irq?.FREQUENCY || 0;
+    this.cpuFrequency = CPU_FREQUENCY;
     this.channel4 = {
       enabled: false,
       playing: false,
@@ -310,7 +311,7 @@ export class GameBoyAdvanceAudio {
     this.channel3Pointer = 0;
     this.channel3Sample = 0;
 
-    this.cpuFrequency = this.core.irq.FREQUENCY;
+    this.cpuFrequency = CPU_FREQUENCY;
 
     this.channel4 = {
       enabled: false,
@@ -541,7 +542,7 @@ export class GameBoyAdvanceAudio {
     this.core.irq.pollNextEvent();
   }
 
-  setSquareChannelEnabled(channel: Channel, enable: any) {
+  setSquareChannelEnabled(channel: Channel, enable: number) {
     if (!(channel.enabled && channel.playing) && enable) {
       channel.enabled = !!enable;
       this.updateTimers();
@@ -569,6 +570,9 @@ export class GameBoyAdvanceAudio {
     this.resetSquareChannel(channel);
   }
 
+  /**
+   * trigger on writing SOUND1CNT_X or SOUND2CNT_HI
+   */
   writeSquareChannelFC(channelId: number, value: number) {
     const channel = this.squareChannels[channelId];
     const frequency = value & 2047;
@@ -753,7 +757,7 @@ export class GameBoyAdvanceAudio {
     channel.length = this.cpuFrequency * ((0x40 - (value & 0x3f)) / 256);
     channel.increment = value & 0x0800 ? 1 / 16 : -1 / 16;
     channel.initialVolume = ((value >> 12) & 0xf) / 16;
-    channel.step = this.cpuFrequency * (((value >> 8) & 0x7) / 64);
+    channel.step = (this.cpuFrequency * ((value >> 8) & 0x7)) / 64;
   }
 
   updateEnvelope(channel: Channel, cycles: number) {
