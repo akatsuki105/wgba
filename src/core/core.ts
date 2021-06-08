@@ -3,6 +3,7 @@ import { GameBoyAdvance } from './gba';
 import { GameBoyAdvanceInterruptHandler } from './irq';
 import { GameBoyAdvanceMMU, Page } from './mmu';
 import { ARMCoreThumb } from './thumb';
+import { printAddr } from 'src/utils';
 
 export const SP = 13;
 export const LR = 14;
@@ -34,9 +35,9 @@ export const execMode = {
 
 export const bitMask = {
   UNALLOC_MASK: 0x0fffff00,
-  USER_MASK: 0xf0000000,
-  PRIV_MASK: 0x000000cf, // This is out of spec, but it seems to be what's done in other implementations
-  STATE_MASK: 0x00000020,
+  USER_MASK: 0xf000_0000,
+  PRIV_MASK: 0x0000_00df, // This is out of spec, but it seems to be what's done in other implementations
+  STATE_MASK: 0x0000_0020,
 } as const;
 
 const exceptionAddr = {
@@ -105,10 +106,10 @@ export class ARMCore {
 
     this.gprs = new Int32Array(16);
 
-    this.execMode = 0;
-    this.instructionWidth = 0;
+    this.execMode = execMode.ARM;
+    this.instructionWidth = wordSize.ARM;
 
-    this.mode = 0;
+    this.mode = privMode.SYSTEM;
     this.cpsrI = false;
     this.cpsrF = false;
     this.cpsrV = false;
@@ -189,10 +190,18 @@ export class ARMCore {
     const gprs = this.gprs;
     const mmu = this.mmu;
     this.step = () => {
-      const instruction =
-        this.instruction ||
-        (this.instruction = this.loadInstruction(gprs[PC] - this.instructionWidth));
-      gprs[PC] += this.instructionWidth;
+      if (!this.instruction) {
+        this.instruction = this.loadInstruction(gprs[PC] - this.instructionWidth);
+      }
+
+      const pc = gprs[PC] - this.instructionWidth;
+      if (([] as number[]).includes(pc)) {
+        printAddr(pc);
+      }
+
+      // exec instruction
+      const instruction = this.instruction;
+      gprs[PC] += this.instructionWidth; // i.e. r15 = pc + 8
       this.conditionPassed = true;
       instruction();
 
@@ -205,6 +214,7 @@ export class ARMCore {
           this.instruction = instruction.next;
         }
       } else {
+        // flush the pipeline
         if (this.conditionPassed && mmu) {
           const pc = (gprs[PC] &= 0xfffffffe);
           if (this.execMode == execMode.ARM) {
@@ -438,7 +448,9 @@ export class ARMCore {
       case privMode.UNDEFINED:
         return bank.UNDEFINED;
       default:
-        throw 'Invalid user mode passed to selectBank';
+        console.error(`Invalid user mode passed to selectBank: ${mode}`);
+
+        return bank.NONE;
     }
   }
 
@@ -738,7 +750,10 @@ export class ARMCore {
         let shiftOp: any = () => {
           throw 'BUG: invalid barrel shifter';
         };
-        if (instruction & 0x02000000) {
+
+        let isShiftByRegister = false;
+        if (instruction & 0x0200_0000) {
+          // shift by immediate
           const immediate = instruction & 0x000000ff;
           const rotate = (instruction & 0x00000f00) >> 7;
           if (!rotate) {
@@ -747,11 +762,13 @@ export class ARMCore {
             shiftOp = this.armCompiler.constructAddressingMode1ImmediateRotate(immediate, rotate);
           }
         } else if (instruction & 0x00000010) {
-          const rs = (instruction & 0x00000f00) >> 8;
+          // shift by register
+          const rs = (instruction & 0x00000f00) >> 8; // register contains shift amount
+          isShiftByRegister = true;
           switch (shiftType) {
             case 0x00000000:
               // LSL
-              shiftOp = this.armCompiler.constructAddressingMode1LSL(rs, rm);
+              shiftOp = this.armCompiler.constructAddressingMode1LSL(rs, rm); // rm lsl#rs
               break;
             case 0x00000020:
               // LSR
@@ -771,6 +788,7 @@ export class ARMCore {
           shiftOp = this.barrelShiftImmediate(shiftType, immediate, rm);
         }
 
+        let isBadTst = false; // https://github.com/jsmolka/gba-tests/blob/a6447c5404c8fc2898ddc51f438271f832083b7e/arm/data_processing.asm#L495
         switch (opcode) {
           case 0x00000000: {
             // AND
@@ -811,9 +829,9 @@ export class ARMCore {
           case 0x00800000: {
             // ADD
             if (s) {
-              op = this.armCompiler.constructADDS(rd, rn, shiftOp, condOp);
+              op = this.armCompiler.constructADDS(rd, rn, isShiftByRegister, shiftOp, condOp);
             } else {
-              op = this.armCompiler.constructADD(rd, rn, shiftOp, condOp);
+              op = this.armCompiler.constructADD(rd, rn, isShiftByRegister, shiftOp, condOp);
             }
             break;
           }
@@ -846,21 +864,25 @@ export class ARMCore {
           }
           case 0x01000000: {
             // TST
+            isBadTst = rd === PC;
             op = this.armCompiler.constructTST(rd, rn, shiftOp, condOp);
             break;
           }
           case 0x01200000: {
             // TEQ
+            isBadTst = rd === PC;
             op = this.armCompiler.constructTEQ(rd, rn, shiftOp, condOp);
             break;
           }
           case 0x01400000: {
             // CMP
+            isBadTst = rd === PC;
             op = this.armCompiler.constructCMP(rd, rn, shiftOp, condOp);
             break;
           }
           case 0x01600000: {
             // CMN
+            isBadTst = rd === PC;
             op = this.armCompiler.constructCMN(rd, rn, shiftOp, condOp);
             break;
           }
@@ -902,6 +924,7 @@ export class ARMCore {
           }
         }
         op.writesPC = rd == PC;
+        if (isBadTst) op.writesPC = false;
       }
     } else if ((instruction & 0x0fb00ff0) == 0x01000090) {
       // Single data swap
@@ -977,7 +1000,7 @@ export class ARMCore {
           } else {
             // Halfword and signed byte data transfer
             const rm = instruction & 0x0000000f;
-            const load = instruction & 0x00100000;
+            const load = instruction & (0b1 << 20);
             const rn = (instruction & 0x000f0000) >> 16;
             const rd = (instruction & 0x0000f000) >> 12;
             const hiOffset = (instruction & 0x00000f00) >> 4;
@@ -1030,27 +1053,30 @@ export class ARMCore {
         }
         case 0x06000000: {
           // LDR/STR
-          const rd = (instruction & 0x0000f000) >> 12;
-          const load = instruction & 0x00100000;
-          const b = instruction & 0x00400000;
-          const i = instruction & 0x02000000;
+          const rd = (instruction & 0x0000_f000) >> 12;
+          const load = instruction & (0b1 << 20);
+          const b = instruction & (0b1 << 22); // load unit, 0 => 32bit, 1 => 8bit
+          const i = instruction & (0b1 << 25); // 0 => immediate, 1 => register
+          const p = instruction & (0b1 << 24); // 0 => post, 1 => pre
+          const w = instruction & (0b1 << 21); // Is WriteBack enabled?
 
           let address: any = () => {
             throw 'Unimplemented memory access: 0x' + instruction.toString(16);
           };
 
-          if (~instruction & 0x01000000) {
+          if (~instruction & 0x0100_0000) {
             // Clear the W bit if the P bit is clear--we don't support memory translation, so these turn into regular accesses
             instruction &= 0xffdfffff;
           }
 
           if (i) {
-            // Register offset
+            // Register offset (e.g. str r13, [r1, r2])
             const rm = instruction & 0x0000000f;
-            const shiftType = instruction & 0x00000060;
+            const shiftType = instruction & 0x00000060; // bit5-6
             const shiftImmediate = (instruction & 0x00000f80) >> 7;
 
             if (shiftType || shiftImmediate) {
+              // e.g. str r13, [r1, r2 lsr#4]
               const shiftOp = this.barrelShiftImmediate(shiftType, shiftImmediate, rm);
               address = this.armCompiler.constructAddressingMode2RegisterShifted(
                 instruction,
@@ -1058,10 +1084,11 @@ export class ARMCore {
                 condOp,
               );
             } else {
+              // lsl#0 -> no shift
               address = this.armCompiler.constructAddressingMode23Register(instruction, rm, condOp);
             }
           } else {
-            // Immediate
+            // Immediate e.g. str r13, [r1, 4]
             const offset = instruction & 0x00000fff;
             address = this.armCompiler.constructAddressingMode23Immediate(
               instruction,
@@ -1078,6 +1105,7 @@ export class ARMCore {
               // LDR
               op = this.armCompiler.constructLDR(rd, address, condOp);
             }
+            op.writesPC = rd == PC || address.writesPC;
           } else {
             if (b) {
               // STRB
@@ -1086,32 +1114,33 @@ export class ARMCore {
               // STR
               op = this.armCompiler.constructSTR(rd, address, condOp);
             }
+            op.writesPC = address.writesPC; // storing PC doesn't affect pipeline
           }
-          op.writesPC = rd == PC || address.writesPC;
           break;
         }
 
         case 0x08000000: {
           // Block data transfer
-          const load = instruction & 0x00100000;
-          const w = instruction & 0x00200000;
-          const user = instruction & 0x00400000;
-          const u = instruction & 0x00800000;
-          const p = instruction & 0x01000000;
-          let rs = instruction & 0x0000ffff;
-          const rn = (instruction & 0x000f0000) >> 16;
+          const load = instruction & (0b1 << 20);
+          const w = instruction & (0b1 << 21);
+          const user = instruction & (0b1 << 22);
+          const u = instruction & (0b1 << 23);
+          const p = instruction & (0b1 << 24);
+          let rs = instruction & 0x0000_ffff; // rlist
+          const rn = (instruction & 0x000f_0000) >> 16; // bit19-16
 
           let address;
           let immediate = 0;
           let offset = 0;
           let overlap = false;
           if (u) {
-            if (p) {
-              immediate = 4;
-            }
+            if (p) immediate = 4; // increment before or decrement before
+
+            // i: target bit index, m: target bit mask (= 0b1 << i)
             for (let m = 0x01, i = 0; i < 16; m <<= 1, ++i) {
               if (rs & m) {
                 if (w && i == rn && !offset) {
+                  // same register?
                   rs &= ~m;
                   immediate += 4;
                   overlap = true;

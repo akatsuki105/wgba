@@ -1,4 +1,5 @@
 import { ARMCore, LR, PC, SP } from './core';
+import { ror } from 'src/utils';
 
 export class ARMCoreThumb {
   cpu: ARMCore;
@@ -412,7 +413,14 @@ export class ARMCoreThumb {
     return () => {
       const n = gprs[rn] + immediate;
       cpu.mmu.waitPrefetch(gprs[PC]);
-      gprs[rd] = cpu.mmu.loadU16(n);
+
+      const misaligned = n % 2;
+      gprs[rd] = cpu.mmu.loadU16(n - misaligned);
+      if (misaligned) {
+        // https://github.com/jsmolka/gba-tests/blob/a6447c5404c8fc2898ddc51f438271f832083b7e/thumb/memory.asm#L320
+        gprs[rd] = ror(gprs[rd], 8);
+      }
+
       cpu.mmu.wait(n);
       ++cpu.cycles;
     };
@@ -424,7 +432,13 @@ export class ARMCoreThumb {
 
     return () => {
       cpu.mmu.waitPrefetch(gprs[PC]);
-      gprs[rd] = cpu.mmu.loadU16(gprs[rn] + gprs[rm]);
+
+      const misaligned = (gprs[rn] + gprs[rm]) % 2;
+      gprs[rd] = cpu.mmu.loadU16(gprs[rn] + gprs[rm] - misaligned);
+      if (misaligned) {
+        // https://github.com/jsmolka/gba-tests/blob/a6447c5404c8fc2898ddc51f438271f832083b7e/thumb/memory.asm#L189
+        gprs[rd] = ror(gprs[rd], 8);
+      }
       cpu.mmu.wait(gprs[rn] + gprs[rm]);
       ++cpu.cycles;
     };
@@ -448,7 +462,15 @@ export class ARMCoreThumb {
 
     return () => {
       cpu.mmu.waitPrefetch(gprs[PC]);
+
+      const misaligned = (gprs[rn] + gprs[rm]) % 2;
       gprs[rd] = cpu.mmu.load16(gprs[rn] + gprs[rm]);
+      if (misaligned) {
+        // https://github.com/jsmolka/gba-tests/blob/a6447c5404c8fc2898ddc51f438271f832083b7e/thumb/memory.asm#L207
+        const val = gprs[rd];
+        gprs[rd] = ((val & 0xff) << 24) | ((val & 0xff) << 16) | ((val & 0xff) << 8) | val;
+      }
+
       cpu.mmu.wait(gprs[rn] + gprs[rm]);
       ++cpu.cycles;
     };

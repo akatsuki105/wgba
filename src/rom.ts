@@ -10,6 +10,11 @@ type ROMInfo = {
 export const romInfoTable: {
   [md5: string]: ROMInfo;
 } = {
+  '1e35207a805af5bafde2361df6721c60': {
+    title: 'バトルネットワーク ロックマンエグゼ',
+    caption: 'ロックマンエグゼ',
+    hardware: 'agb',
+  },
   '5c9a6664da79a4893895fd0c380fd020': {
     title: 'バトルネットワーク ロックマンエグゼ2',
     caption: 'ロックマンエグゼ2',
@@ -94,6 +99,11 @@ export const romInfoTable: {
     title: 'ボクらの太陽',
     hardware: 'agb',
   },
+  b8fb00c59242afc33b1a40d0d2b94ee7: {
+    title: 'ファイナルファンタジーV アドバンス',
+    caption: 'ファイナルファンタジー5',
+    hardware: 'agb',
+  },
   '09daf6531ded19b7921367084e439b2f': {
     title: 'ファイナルファンタジーVI アドバンス',
     caption: 'ファイナルファンタジー6',
@@ -121,6 +131,21 @@ export const romInfoTable: {
     title: '星のカービィ',
     caption: '星のカービィ GB',
     hardware: 'dmg',
+  },
+  '3627bbd90cb1950892989cadf4519f3b': {
+    title: 'jsmolka/gba-tests/arm.gba@a6447c5404c8fc2898ddc51f438271f832083b7e',
+    caption: 'gba-tests/arm.gba@a6447c',
+    hardware: 'agb',
+  },
+  b8e0ee5467808a8af7cb15c6e65827e5: {
+    title: 'jsmolka/gba-tests/thumb.gba@a6447c5404c8fc2898ddc51f438271f832083b7e',
+    caption: 'gba-tests/thumb.gba@a6447c',
+    hardware: 'agb',
+  },
+  '647fcd9daaf525a656e9cd81b791ddb6': {
+    title: 'mgba-emu/suite@04ada216ee13c56d786e54636ac980a71d791145',
+    caption: 'mgba-emu/suite@04ada2',
+    hardware: 'agb',
   },
 } as const;
 

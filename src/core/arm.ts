@@ -1,4 +1,5 @@
 import { ARMCore, bitMask, LR, PC, privMode } from './core';
+import { calcBorrowCarry } from 'src/utils';
 
 type ImmFunc = (rn: number, offset: number, condOp?: () => boolean) => () => number;
 type RegFunc = (rn: number, rm: number, condOp?: () => boolean) => () => number;
@@ -58,6 +59,9 @@ export class ARMCoreArm {
       null,
       null,
 
+      // post ↑ (write-back is ALWAYS enabled)
+      // pre ↓ (write-back is optional)
+
       // 0P0x0
       (rn, offset, condOp) => {
         const gprs = cpu.gprs;
@@ -100,7 +104,7 @@ export class ARMCoreArm {
         return address;
       },
 
-      // 0PUxW
+      // 13: 0PUxW
       (rn, offset, condOp) => {
         const gprs = cpu.gprs;
         const address = () => {
@@ -115,8 +119,8 @@ export class ARMCoreArm {
         return address;
       },
 
-      null,
-      null,
+      null, // 14
+      null, // 15
     ];
 
     this.addressingMode23Register = [
@@ -206,7 +210,7 @@ export class ARMCoreArm {
         return address;
       },
 
-      // IPUxW
+      // 13: IPUxW
       (rn, rm, condOp) => {
         const gprs = cpu.gprs;
         const address = () => {
@@ -221,12 +225,12 @@ export class ARMCoreArm {
         return address;
       },
 
-      null,
-      null,
+      null, // 14
+      null, // 15
     ];
 
     this.addressingMode2RegisterShifted = [
-      // I00x0
+      // 0: I00x0
       (rn, shiftOp, condOp) => {
         const gprs = cpu.gprs;
         const address = () => {
@@ -244,20 +248,20 @@ export class ARMCoreArm {
         return address;
       },
 
-      // I00xW
+      // 1: I00xW
       null,
 
-      null,
-      null,
+      null, // 2
+      null, // 3
 
-      // I0Ux0
+      // 4: I0Ux0
       (rn, shiftOp, condOp) => {
         const gprs = cpu.gprs;
         const address = () => {
           const addr = gprs[rn];
           if (!condOp || condOp()) {
             shiftOp();
-            gprs[rn] += cpu.shifterOperand;
+            gprs[rn] += cpu.shifterOperand; // // e.g. `addr = r1 + (r2 lsr#4)` in str r13, [r1, r2 lsr#4]
           }
 
           return addr;
@@ -267,13 +271,16 @@ export class ARMCoreArm {
 
         return address;
       },
-      // I0UxW
+      // 5: I0UxW
       null,
 
-      null,
-      null,
+      null, // 6
+      null, // 7
 
-      // IP0x0
+      // post ↑ (write-back is ALWAYS enabled)
+      // pre ↓ (write-back is optional)
+
+      // 8: IP0x0
       (rn, shiftOp, condOp) => {
         const gprs = cpu.gprs;
         const address = () => {
@@ -287,7 +294,7 @@ export class ARMCoreArm {
         return address;
       },
 
-      // IP0xW
+      // 9: IP0xW
       (rn, shiftOp, condOp) => {
         const gprs = cpu.gprs;
         const address = () => {
@@ -305,10 +312,10 @@ export class ARMCoreArm {
         return address;
       },
 
-      null,
-      null,
+      null, // 10
+      null, // 11
 
-      // IPUx0
+      // 12: IPUx0
       (rn, shiftOp, condOp) => {
         const gprs = cpu.gprs;
         const address = () => {
@@ -322,7 +329,7 @@ export class ARMCoreArm {
         return address;
       },
 
-      // IPUxW
+      // 13: IPUxW
       (rn, shiftOp, condOp) => {
         const gprs = cpu.gprs;
         const address = () => {
@@ -338,8 +345,8 @@ export class ARMCoreArm {
         return address;
       },
 
-      null,
-      null,
+      null, // 14
+      null, // 15
     ];
   }
 
@@ -482,24 +489,34 @@ export class ARMCoreArm {
     immediate: number,
     condOp?: () => boolean,
   ) {
-    const rn = (instruction & 0x000f0000) >> 16;
-    if (this.addressingMode23Immediate[(instruction & 0x01a00000) >> 21]) {
-      return (this.addressingMode23Immediate[(instruction & 0x01a00000) >> 21] as ImmFunc)(
-        rn,
-        immediate,
-        condOp,
-      );
+    const rd = (instruction & 0x0000_f000) >> 12;
+    const rn = (instruction & 0x000f_0000) >> 16;
+    const load = instruction & (0b1 << 20);
+    const immFunc = this.addressingMode23Immediate[(instruction & 0x01a00000) >> 21];
+    if (immFunc) {
+      const wrappedCondOp = () => {
+        if (load && rd == rn) return false;
+
+        return !condOp || condOp();
+      };
+
+      return immFunc(rn, immediate, wrappedCondOp);
     }
   }
 
   constructAddressingMode23Register(instruction: number, rm: number, condOp?: () => boolean) {
+    const rd = (instruction & 0x0000_f000) >> 12;
     const rn = (instruction & 0x000f0000) >> 16;
-    if (this.addressingMode23Register[(instruction & 0x01a00000) >> 21]) {
-      return (this.addressingMode23Register[(instruction & 0x01a00000) >> 21] as RegFunc)(
-        rn,
-        rm,
-        condOp,
-      );
+    const load = instruction & (0b1 << 20);
+    const regFunc = this.addressingMode23Register[(instruction & 0x01a00000) >> 21];
+    if (regFunc) {
+      const wrappedCondOp = () => {
+        if (load && rd == rn) return false;
+
+        return !condOp || condOp();
+      };
+
+      return regFunc(rn, rm, wrappedCondOp);
     }
   }
 
@@ -509,12 +526,9 @@ export class ARMCoreArm {
     condOp?: () => boolean,
   ) {
     const rn = (instruction & 0x000f0000) >> 16;
-    if (this.addressingMode2RegisterShifted[(instruction & 0x01a00000) >> 21]) {
-      return (this.addressingMode2RegisterShifted[(instruction & 0x01a00000) >> 21] as RegSFunc)(
-        rn,
-        shiftOp,
-        condOp,
-      );
+    const regSFunc = this.addressingMode2RegisterShifted[(instruction & 0x01a00000) >> 21];
+    if (regSFunc) {
+      return regSFunc(rn, shiftOp, condOp);
     }
   }
 
@@ -529,6 +543,13 @@ export class ARMCoreArm {
     };
   }
 
+  /**
+   * returns function which returns LDM/STM initial target address
+   * @param {number} immediate -
+   * @param {number} offset - sp variation as a result of stack manipulation
+   * @param {number} rn - register contains stack pointer
+   * @param {boolean} overlap - ???
+   */
   constructAddressingMode4Writeback(
     immediate: number,
     offset: number,
@@ -541,7 +562,7 @@ export class ARMCoreArm {
     return (writeInitial: boolean): number => {
       const addr = gprs[rn] + immediate;
       if (writeInitial && overlap) cpu.mmu?.store32(gprs[rn] + immediate - 4, gprs[rn]);
-      gprs[rn] += offset;
+      gprs[rn] += offset; // write back?
 
       return addr;
     };
@@ -568,8 +589,9 @@ export class ARMCoreArm {
       cpu.mmu.waitPrefetch32(gprs[PC]);
       if (condOp && !condOp()) return;
       shiftOp();
-      const shifterOperand = (cpu.shifterOperand >>> 0) + Number(!!cpu.cpsrC);
-      const d = (gprs[rn] >>> 0) + shifterOperand;
+      const carry = cpu.cpsrC ? 1 : 0;
+      const shifterOperand = cpu.shifterOperand >>> 0;
+      const d = (gprs[rn] >>> 0) + shifterOperand + carry;
       if (rd == PC && cpu.hasSPSR()) {
         cpu.unpackCPSR(cpu.spsr);
       } else {
@@ -585,7 +607,13 @@ export class ARMCoreArm {
     };
   }
 
-  constructADD(rd: number, rn: number, shiftOp: () => void, condOp?: () => boolean): () => void {
+  constructADD(
+    rd: number,
+    rn: number,
+    isShiftByRegister: boolean,
+    shiftOp: () => void,
+    condOp?: () => boolean,
+  ): () => void {
     const cpu = this.cpu;
     const gprs = cpu.gprs;
 
@@ -593,11 +621,20 @@ export class ARMCoreArm {
       cpu.mmu.waitPrefetch32(gprs[PC]);
       if (condOp && !condOp()) return;
       shiftOp();
-      gprs[rd] = (gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
+
+      let operand1 = gprs[rn];
+      if (rn == PC && isShiftByRegister) operand1 += 4;
+      gprs[rd] = (operand1 >>> 0) + (cpu.shifterOperand >>> 0);
     };
   }
 
-  constructADDS(rd: number, rn: number, shiftOp: () => void, condOp?: () => boolean): () => void {
+  constructADDS(
+    rd: number,
+    rn: number,
+    isShiftByRegister: boolean,
+    shiftOp: () => void,
+    condOp?: () => boolean,
+  ): () => void {
     const cpu = this.cpu;
     const gprs = cpu.gprs;
 
@@ -605,7 +642,10 @@ export class ARMCoreArm {
       cpu.mmu.waitPrefetch32(gprs[PC]);
       if (condOp && !condOp()) return;
       shiftOp();
-      const d = (gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
+
+      let operand1 = gprs[rn];
+      if (rn == PC && isShiftByRegister) operand1 += 4;
+      const d = (operand1 >>> 0) + (cpu.shifterOperand >>> 0);
       if (rd == PC && cpu.hasSPSR()) {
         cpu.unpackCPSR(cpu.spsr);
       } else {
@@ -739,13 +779,19 @@ export class ARMCoreArm {
       if (condOp && !condOp()) return;
       shiftOp();
       const aluOut = (gprs[rn] >>> 0) + (cpu.shifterOperand >>> 0);
-      cpu.cpsrN = !!(aluOut >> 31);
-      cpu.cpsrZ = !(aluOut & 0xffffffff);
-      cpu.cpsrC = aluOut > 0xffffffff;
-      cpu.cpsrV =
-        gprs[rn] >> 31 == cpu.shifterOperand >> 31 &&
-        gprs[rn] >> 31 != aluOut >> 31 &&
-        cpu.shifterOperand >> 31 != aluOut >> 31;
+
+      // https://github.com/jsmolka/gba-tests/blob/a6447c5404c8fc2898ddc51f438271f832083b7e/arm/data_processing.asm#L477
+      if (rd == PC && cpu.hasSPSR()) {
+        cpu.unpackCPSR(cpu.spsr);
+      } else {
+        cpu.cpsrN = !!(aluOut >> 31);
+        cpu.cpsrZ = !(aluOut & 0xffffffff);
+        cpu.cpsrC = aluOut > 0xffffffff;
+        cpu.cpsrV =
+          gprs[rn] >> 31 == cpu.shifterOperand >> 31 &&
+          gprs[rn] >> 31 != aluOut >> 31 &&
+          cpu.shifterOperand >> 31 != aluOut >> 31;
+      }
     };
   }
 
@@ -758,10 +804,16 @@ export class ARMCoreArm {
       if (condOp && !condOp()) return;
       shiftOp();
       const aluOut = gprs[rn] - cpu.shifterOperand;
-      cpu.cpsrN = !!(aluOut >> 31);
-      cpu.cpsrZ = !(aluOut & 0xffffffff);
-      cpu.cpsrC = gprs[rn] >>> 0 >= cpu.shifterOperand >>> 0;
-      cpu.cpsrV = gprs[rn] >> 31 != cpu.shifterOperand >> 31 && gprs[rn] >> 31 != aluOut >> 31;
+
+      // https://github.com/jsmolka/gba-tests/blob/a6447c5404c8fc2898ddc51f438271f832083b7e/arm/data_processing.asm#L477
+      if (rd == PC && cpu.hasSPSR()) {
+        cpu.unpackCPSR(cpu.spsr);
+      } else {
+        cpu.cpsrN = !!(aluOut >> 31);
+        cpu.cpsrZ = !(aluOut & 0xffffffff);
+        cpu.cpsrC = gprs[rn] >>> 0 >= cpu.shifterOperand >>> 0;
+        cpu.cpsrV = gprs[rn] >> 31 != cpu.shifterOperand >> 31 && gprs[rn] >> 31 != aluOut >> 31;
+      }
     };
   }
 
@@ -1200,14 +1252,15 @@ export class ARMCoreArm {
       cpu.mmu.waitPrefetch32(gprs[PC]);
       if (condOp && !condOp()) return;
       shiftOp();
-      const n = (gprs[rn] >>> 0) + Number(!cpu.cpsrC);
-      const d = (cpu.shifterOperand >>> 0) - n;
+      const carry = cpu.cpsrC ? 0 : -1;
+      const n = gprs[rn] >>> 0;
+      const d = (cpu.shifterOperand >>> 0) - n + carry;
       if (rd == PC && cpu.hasSPSR()) {
         cpu.unpackCPSR(cpu.spsr);
       } else {
         cpu.cpsrN = !!(d >> 31);
         cpu.cpsrZ = !(d & 0xffffffff);
-        cpu.cpsrC = cpu.shifterOperand >>> 0 >= d >>> 0;
+        cpu.cpsrC = calcBorrowCarry(cpu.shifterOperand >>> 0, n, !cpu.cpsrC);
         cpu.cpsrV = cpu.shifterOperand >> 31 != n >> 31 && cpu.shifterOperand >> 31 != d >> 31;
       }
       gprs[rd] = d;
@@ -1235,14 +1288,15 @@ export class ARMCoreArm {
       cpu.mmu.waitPrefetch32(gprs[PC]);
       if (condOp && !condOp()) return;
       shiftOp();
-      const shifterOperand = (cpu.shifterOperand >>> 0) + Number(!cpu.cpsrC);
-      const d = (gprs[rn] >>> 0) - shifterOperand;
+      const carry = cpu.cpsrC ? 0 : -1;
+      const shifterOperand = cpu.shifterOperand >>> 0;
+      const d = (gprs[rn] >>> 0) - shifterOperand + carry;
       if (rd == PC && cpu.hasSPSR()) {
         cpu.unpackCPSR(cpu.spsr);
       } else {
         cpu.cpsrN = !!(d >> 31);
         cpu.cpsrZ = !(d & 0xffffffff);
-        cpu.cpsrC = gprs[rn] >>> 0 >= d >>> 0;
+        cpu.cpsrC = calcBorrowCarry(gprs[rn] >>> 0, shifterOperand, !cpu.cpsrC);
         cpu.cpsrV = gprs[rn] >> 31 != shifterOperand >> 31 && gprs[rn] >> 31 != d >> 31;
       }
       gprs[rd] = d;
@@ -1360,7 +1414,8 @@ export class ARMCoreArm {
       }
       mmu.wait32(gprs[PC]);
       let addr = address(true);
-      let total = 0;
+      let total = 0; // push count
+
       let m, i;
       for (m = rs, i = 0; m; m >>= 1, ++i) {
         if (m & 1) {
@@ -1369,6 +1424,7 @@ export class ARMCoreArm {
           ++total;
         }
       }
+
       mmu.waitMulti32(addr, total);
     };
   }
@@ -1402,7 +1458,7 @@ export class ARMCoreArm {
     };
   }
 
-  constructSTR(rd: number, address: (w?: boolean) => number, condOp?: () => boolean): () => void {
+  constructSTR(rd: number, address: () => number, condOp?: () => boolean): () => void {
     const cpu = this.cpu;
     const gprs = cpu.gprs;
 
@@ -1413,7 +1469,13 @@ export class ARMCoreArm {
         return;
       }
       const addr = address();
-      cpu.mmu.store32(addr, gprs[rd]);
+
+      let storedValue = gprs[rd];
+      if (rd === PC) {
+        storedValue += 4;
+      }
+
+      cpu.mmu.store32(addr, storedValue);
       cpu.mmu.wait32(addr);
       cpu.mmu.wait32(gprs[PC]);
     };
@@ -1541,10 +1603,16 @@ export class ARMCoreArm {
       cpu.mmu.waitPrefetch32(gprs[PC]);
       if (condOp && !condOp()) return;
       shiftOp();
-      const aluOut = gprs[rn] ^ cpu.shifterOperand;
-      cpu.cpsrN = !!(aluOut >> 31);
-      cpu.cpsrZ = !(aluOut & 0xffffffff);
-      cpu.cpsrC = !!cpu.shifterCarryOut;
+
+      // https://github.com/jsmolka/gba-tests/blob/a6447c5404c8fc2898ddc51f438271f832083b7e/arm/data_processing.asm#L477
+      if (rd == PC && cpu.hasSPSR()) {
+        cpu.unpackCPSR(cpu.spsr);
+      } else {
+        const aluOut = gprs[rn] ^ cpu.shifterOperand;
+        cpu.cpsrN = !!(aluOut >> 31);
+        cpu.cpsrZ = !(aluOut & 0xffffffff);
+        cpu.cpsrC = !!cpu.shifterCarryOut;
+      }
     };
   }
 
@@ -1556,22 +1624,30 @@ export class ARMCoreArm {
       cpu.mmu.waitPrefetch32(gprs[PC]);
       if (condOp && !condOp()) return;
       shiftOp();
-      const aluOut = gprs[rn] & cpu.shifterOperand;
-      cpu.cpsrN = !!(aluOut >> 31);
-      cpu.cpsrZ = !(aluOut & 0xffffffff);
-      cpu.cpsrC = !!cpu.shifterCarryOut;
+
+      // https://github.com/jsmolka/gba-tests/blob/a6447c5404c8fc2898ddc51f438271f832083b7e/arm/data_processing.asm#L477
+      if (rd == PC && cpu.hasSPSR()) {
+        cpu.unpackCPSR(cpu.spsr);
+      } else {
+        const aluOut = gprs[rn] & cpu.shifterOperand;
+        cpu.cpsrN = !!(aluOut >> 31);
+        cpu.cpsrZ = !(aluOut & 0xffffffff);
+        cpu.cpsrC = !!cpu.shifterCarryOut;
+      }
     };
   }
 
+  /**
+   * RdHiLo=Rm*Rs+RdHiLo
+   */
   constructUMLAL(
-    rd: number,
-    rn: number,
+    rdHi: number,
+    rdLo: number,
     rs: number,
     rm: number,
     condOp?: () => boolean,
   ): () => void {
     const cpu = this.cpu;
-    const SHIFT_32 = 1 / 0x100000000;
     const gprs = cpu.gprs;
 
     return () => {
@@ -1579,11 +1655,11 @@ export class ARMCoreArm {
       if (condOp && !condOp()) return;
       cpu.cycles += 2;
       cpu.mmu.waitMul(rs);
-      const hi = ((gprs[rm] & 0xffff0000) >>> 0) * (gprs[rs] >>> 0);
-      const lo = (gprs[rm] & 0x0000ffff) * (gprs[rs] >>> 0);
-      const carry = (gprs[rn] >>> 0) + hi + lo;
-      gprs[rn] = carry;
-      gprs[rd] += carry * SHIFT_32;
+      const lhs = BigInt(gprs[rm] >>> 0) * BigInt(gprs[rs] >>> 0); // Rm*Rs
+      const rhs = BigInt(BigInt(gprs[rdHi] >>> 0) << BigInt(32)) | BigInt(gprs[rdLo] >>> 0);
+      const result = lhs + rhs;
+      gprs[rdLo] = Number(result & BigInt(0xffff_ffff));
+      gprs[rdHi] = Number((result >> BigInt(32)) & BigInt(0xffff_ffff));
     };
   }
 

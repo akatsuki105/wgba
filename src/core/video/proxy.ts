@@ -1,5 +1,6 @@
 import { GameBoyAdvanceMMU, MemoryView, region, size } from '../mmu';
 import { Serializer } from '../util';
+import { resolveOAMMirror, resolvePaletteMirror, resolveVRAMMirror } from 'src/utils';
 
 const worker = './worker';
 
@@ -10,14 +11,21 @@ export class MemoryProxy {
   mask: number;
   size: number;
   icache: any[];
+  resolveMirror: ((offset: number) => number) | null;
 
-  constructor(owner: any, size: number, blockSize: number) {
+  constructor(
+    owner: any,
+    size: number,
+    blockSize: number,
+    resolveMirror?: (offset: number) => number,
+  ) {
     this.owner = owner;
     this.blocks = [];
     this.blockSize = blockSize;
     this.mask = (1 << blockSize) - 1;
     this.size = size;
     this.icache = [];
+    this.resolveMirror = resolveMirror || null;
     if (blockSize) {
       for (let i = 0; i < size >> blockSize; ++i) {
         this.blocks.push(new MemoryView(new ArrayBuffer(1 << blockSize)));
@@ -51,26 +59,57 @@ export class MemoryProxy {
   }
 
   load8(offset: number) {
-    return this.blocks[offset >> this.blockSize].load8(offset & this.mask);
+    try {
+      if (this.resolveMirror) offset = this.resolveMirror(offset);
+
+      return this.blocks[offset >> this.blockSize].load8(offset & this.mask);
+    } catch (e) {
+      return 0;
+    }
   }
 
   load16(offset: number) {
-    return this.blocks[offset >> this.blockSize].load16(offset & this.mask);
+    try {
+      if (this.resolveMirror) offset = this.resolveMirror(offset);
+
+      return this.blocks[offset >> this.blockSize].load16(offset & this.mask);
+    } catch (e) {
+      return 0;
+    }
   }
 
   loadU8(offset: number) {
-    return this.blocks[offset >> this.blockSize].loadU8(offset & this.mask);
+    try {
+      if (this.resolveMirror) offset = this.resolveMirror(offset);
+
+      return this.blocks[offset >> this.blockSize].loadU8(offset & this.mask);
+    } catch (e) {
+      return 0;
+    }
   }
 
   loadU16(offset: number) {
-    return this.blocks[offset >> this.blockSize].loadU16(offset & this.mask);
+    try {
+      if (this.resolveMirror) offset = this.resolveMirror(offset);
+
+      return this.blocks[offset >> this.blockSize].loadU16(offset & this.mask);
+    } catch (e) {
+      return 0;
+    }
   }
 
   load32(offset: number) {
-    return this.blocks[offset >> this.blockSize].load32(offset & this.mask);
+    try {
+      if (this.resolveMirror) offset = this.resolveMirror(offset);
+
+      return this.blocks[offset >> this.blockSize].load32(offset & this.mask);
+    } catch (e) {
+      return 0;
+    }
   }
 
   store8(offset: number, value: number) {
+    if (this.resolveMirror) offset = this.resolveMirror(offset);
     if (offset >= this.size) return;
     this.owner.memoryDirtied(this, offset >> this.blockSize);
     this.blocks[offset >> this.blockSize].store8(offset & this.mask, value);
@@ -78,6 +117,7 @@ export class MemoryProxy {
   }
 
   store16(offset: number, value: number) {
+    if (this.resolveMirror) offset = this.resolveMirror(offset);
     if (offset >= this.size) return;
     this.owner.memoryDirtied(this, offset >> this.blockSize);
 
@@ -85,6 +125,7 @@ export class MemoryProxy {
   }
 
   store32(offset: number, value: number) {
+    if (this.resolveMirror) offset = this.resolveMirror(offset);
     if (offset >= this.size) return;
     this.owner.memoryDirtied(this, offset >> this.blockSize);
 
@@ -162,9 +203,9 @@ export class GameBoyAdvanceRenderProxy {
   }
 
   clear(mmu: GameBoyAdvanceMMU) {
-    this.palette = new MemoryProxy(this, size.PALETTE_RAM, 0);
-    this.vram = new MemoryProxy(this, size.VRAM, 13);
-    this.oam = new MemoryProxy(this, size.OAM, 0);
+    this.palette = new MemoryProxy(this, size.PALETTE_RAM, 0, resolvePaletteMirror);
+    this.vram = new MemoryProxy(this, size.VRAM, 13, resolveVRAMMirror);
+    this.oam = new MemoryProxy(this, size.OAM, 0, resolveOAMMirror);
 
     this.dirty = null;
     this.scanlineQueue = [];
@@ -311,13 +352,13 @@ export class GameBoyAdvanceRenderProxy {
   clearSubsets(mmu: GameBoyAdvanceMMU, regions: number) {
     this.dirty = this.dirty || {};
     if (regions & 0x04) {
-      this.palette = new MemoryProxy(this, size.PALETTE_RAM, 0);
+      this.palette = new MemoryProxy(this, size.PALETTE_RAM, 0, resolvePaletteMirror);
       mmu.mmap(region.PALETTE_RAM, this.palette);
       this.memoryDirtied(this.palette, 0);
     }
 
     if (regions & 0x08) {
-      this.vram = new MemoryProxy(this, size.VRAM, 13);
+      this.vram = new MemoryProxy(this, size.VRAM, 13, resolveVRAMMirror);
       mmu.mmap(region.VRAM, this.vram);
       for (let i = 0; i < this.vram.blocks.length; ++i) {
         this.memoryDirtied(this.vram, i);
@@ -325,7 +366,7 @@ export class GameBoyAdvanceRenderProxy {
     }
 
     if (regions & 0x10) {
-      this.oam = new MemoryProxy(this, size.OAM, 0);
+      this.oam = new MemoryProxy(this, size.OAM, 0, resolveOAMMirror);
       mmu.mmap(region.OAM, this.oam);
       this.memoryDirtied(this.oam, 0);
     }
