@@ -9,6 +9,7 @@ const FIFO_MAX = 0x200;
 // const SOUND_BIAS = 0x200;
 
 const dutyLookUp = [0.125, 0.25, 0.5, 0.75];
+const chan3VolumeLt = [0, 1, 0.5, 0.25, 0.75, 0.75, 0.75, 0.75];
 
 export type FrostAudio = {
   nextSample: number;
@@ -476,38 +477,31 @@ export class GameBoyAdvanceAudio {
   }
 
   writeSoundControlLo(value: number) {
-    this.masterVolumeLeft = value & 0x7;
-    this.masterVolumeRight = (value >> 4) & 0x7;
-    this.enabledLeft = (value >> 8) & 0xf;
-    this.enabledRight = (value >> 12) & 0xf;
+    this.masterVolumeLeft = value & 0b111;
+    this.masterVolumeRight = (value >> 4) & 0b111;
+    this.enabledLeft = (value >> 8) & 0b1111;
+    this.enabledRight = (value >> 12) & 0b1111;
 
-    this.setSquareChannelEnabled(
-      this.squareChannels[0],
-      (this.enabledLeft | this.enabledRight) & 0x1,
-    );
-    this.setSquareChannelEnabled(
-      this.squareChannels[1],
-      (this.enabledLeft | this.enabledRight) & 0x2,
-    );
-    this.enableChannel3 = !!((this.enabledLeft | this.enabledRight) & 0x4);
-    this.setChannel4Enabled(!!((this.enabledLeft | this.enabledRight) & 0x8));
+    const chan1Enable = !!((this.enabledLeft | this.enabledRight) & 0x1);
+    this.setSquareChannelEnabled(this.squareChannels[0], chan1Enable);
+
+    const chan2Enable = !!((this.enabledLeft | this.enabledRight) & 0x2);
+    this.setSquareChannelEnabled(this.squareChannels[1], chan2Enable);
+
+    const chan3Enable = !!((this.enabledLeft | this.enabledRight) & 0x4);
+    this.enableChannel3 = chan3Enable;
+
+    const chan4Enable = !!((this.enabledLeft | this.enabledRight) & 0x8);
+    this.setChannel4Enabled(chan4Enable);
 
     this.updateTimers();
     this.core.irq.pollNextEvent();
   }
 
   writeSoundControlHi(value: number) {
-    switch (value & 0x0003) {
-      case 0:
-        this.soundRatio = 0.25;
-        break;
-      case 1:
-        this.soundRatio = 0.5;
-        break;
-      case 2:
-        this.soundRatio = 1;
-        break;
-    }
+    const soundRatioLt = [0.25, 0.5, 1, this.soundRatio];
+    this.soundRatio = soundRatioLt[value & 0x0003];
+
     this.ratioChannelA = (((value & 0x0004) >> 2) + 1) * 0.5;
     this.ratioChannelB = (((value & 0x0008) >> 3) + 1) * 0.5;
 
@@ -515,9 +509,7 @@ export class GameBoyAdvanceAudio {
     this.enableLeftChannelA = !!(value & 0x0200);
     this.enableChannelA = !!(value & 0x0300);
     this.soundTimerA = value & 0x0400;
-    if (value & 0x0800) {
-      this.fifoA = [];
-    }
+    if (value & 0x0800) this.fifoA = [];
     this.enableRightChannelB = !!(value & 0x1000);
     this.enableLeftChannelB = !!(value & 0x2000);
     this.enableChannelB = !!(value & 0x3000);
@@ -542,13 +534,15 @@ export class GameBoyAdvanceAudio {
     this.core.irq.pollNextEvent();
   }
 
-  setSquareChannelEnabled(channel: Channel, enable: number) {
-    if (!(channel.enabled && channel.playing) && enable) {
-      channel.enabled = !!enable;
+  setSquareChannelEnabled(channel: Channel, enable: boolean) {
+    const wasEnabled = channel.enabled;
+    channel.enabled = enable;
+
+    // mute -> unmute
+    const wasMuted = !(wasEnabled && channel.playing);
+    if (wasMuted && enable) {
       this.updateTimers();
       this.core.irq.pollNextEvent();
-    } else {
-      channel.enabled = !!enable;
     }
   }
 
@@ -556,7 +550,7 @@ export class GameBoyAdvanceAudio {
     const channel = this.squareChannels[channelId];
     channel.sweepSteps = value & 0x07;
     channel.sweepIncrement = value & 0x08 ? -1 : 1;
-    channel.sweepInterval = (((value >> 4) & 0x7) * this.cpuFrequency) / 128;
+    channel.sweepInterval = (((value >> 4) & 0b111) * this.cpuFrequency) / 128;
     channel.doSweep = !!channel.sweepInterval;
     channel.nextSweep = this.cpu.cycles + channel.sweepInterval;
     this.resetSquareChannel(channel);
@@ -647,22 +641,7 @@ export class GameBoyAdvanceAudio {
   writeChannel3Hi(value: number) {
     this.channel3Length = (this.cpuFrequency * (0x100 - (value & 0xff))) / 256;
     const volume = (value >> 13) & 0x7;
-    switch (volume) {
-      case 0:
-        this.channel3Volume = 0;
-        break;
-      case 1:
-        this.channel3Volume = 1;
-        break;
-      case 2:
-        this.channel3Volume = 0.5;
-        break;
-      case 3:
-        this.channel3Volume = 0.25;
-        break;
-      default:
-        this.channel3Volume = 0.75;
-    }
+    this.channel3Volume = chan3VolumeLt[volume];
   }
 
   writeChannel3X(value: number) {
@@ -678,6 +657,18 @@ export class GameBoyAdvanceAudio {
     this.playingChannel3 = this.channel3Write;
     this.updateTimers();
     this.core.irq.pollNextEvent();
+  }
+
+  readWaveData(offset: number, width: number) {
+    if (!this.channel3Bank) offset += 16;
+    if (width == 2) {
+      const lower = this.waveData[offset] & 0xff;
+      const upper = this.waveData[offset + 1] & 0xff;
+
+      return (upper << 8) | lower;
+    }
+
+    return this.waveData[offset] & 0xff;
   }
 
   writeWaveData(offset: number, data: number, width: number) {

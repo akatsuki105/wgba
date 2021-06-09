@@ -5,6 +5,8 @@ module.exports = {
     config.output.chunkFilename = isServer
       ? `${dev ? "[name]" : "[name].[fullhash]"}.js`
       : `static/chunks/${dev ? "[name]" : "[name].[fullhash]"}.js`;
+    config.output.hotUpdateMainFilename =
+      "static/webpack/[fullhash].[runtime].hot-update.json";
 
     config.module.rules.push({
       test: /\.gba/,

@@ -20,12 +20,6 @@ const setVolume = (value: number) => {
   gba.audio.masterVolume = Math.pow(2, value) - 1;
 };
 
-const setPixelated = (pixelated: boolean) => {
-  const screen = document.getElementById('screen') as HTMLCanvasElement;
-  const context = screen.getContext('2d', { alpha: false });
-  if (context) context.imageSmoothingEnabled = !pixelated;
-};
-
 const powerOff = () => {
   if (window.confirm('Quit game, OK?')) location.reload();
 };
@@ -87,8 +81,7 @@ const Index = () => {
       gba.keypad.eatInput = true;
       gba.isMobile = ['xs', 'sm'].includes(media);
       gba.setLogger((level: number, error: Error) => {
-        if (gba) gba.pause();
-        setPixelated(true);
+        console.error(error);
       });
     } catch (exception) {
       console.error(exception);
@@ -104,6 +97,12 @@ const Index = () => {
       gba.setCanvas(canvas);
       gba.logLevel = logLvs.ERROR;
       gba.setBios(base64ToArrayBuffer(bios), false);
+
+      // pixelate
+      const context = canvas.getContext('2d', { alpha: false });
+      if (context) context.imageSmoothingEnabled = false;
+
+      // end
       setInitialized(true);
     }
   }, [gba, screenRef.current, initialized]); // eslint-disable-line

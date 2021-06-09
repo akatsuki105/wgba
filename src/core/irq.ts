@@ -4,15 +4,17 @@ import { GameBoyAdvance } from './gba';
 import { GameBoyAdvanceIO, ioAddr } from './io';
 import { MemoryBlock, region, size } from './mmu';
 import { GameBoyAdvanceVideo } from './video';
-import { arcTan, arcTan2 } from 'src/utils';
+import { arcTan, arcTan2, divide } from 'src/utils';
 
 export const CPU_FREQUENCY = 16.78 * 1000 * 1000;
+
+const prescaleBitsLt = [0, 6, 8, 10];
 
 type Timer = {
   reload: number;
   oldReload: number;
-  prescaleBits: number;
-  countUp: boolean;
+  prescaleBits: number; // clock shift amount (according to CNT_H's bit0-1)
+  cascade: boolean; // is cascade enabled
   doIrq: boolean;
   enable: boolean;
   lastEvent: number;
@@ -159,7 +161,7 @@ export class GameBoyAdvanceInterruptHandler {
         reload: 0,
         oldReload: 0,
         prescaleBits: 0,
-        countUp: false,
+        cascade: false,
         doIrq: false,
         enable: false,
         lastEvent: 0,
@@ -191,19 +193,12 @@ export class GameBoyAdvanceInterruptHandler {
     this.interruptFlags = frost.interruptFlags;
     this.dma = frost.dma;
     this.timers = frost.timers;
+
     this.timersEnabled = 0;
-    if (this.timers[0].enable) {
-      ++this.timersEnabled;
-    }
-    if (this.timers[1].enable) {
-      ++this.timersEnabled;
-    }
-    if (this.timers[2].enable) {
-      ++this.timersEnabled;
-    }
-    if (this.timers[3].enable) {
-      ++this.timersEnabled;
-    }
+    this.timers.forEach((timer) => {
+      if (timer.enable) this.timersEnabled++;
+    });
+
     this.nextEvent = frost.nextEvent;
     this.springIRQ = frost.springIRQ;
   }
@@ -240,7 +235,7 @@ export class GameBoyAdvanceInterruptHandler {
           }
 
           const timer1 = this.timers[1];
-          if (timer1.countUp) {
+          if (timer1.cascade) {
             if (++this.io.registers[ioAddr.TM1CNT_LO >> 1] == 0x10000) {
               timer1.nextEvent = this.cpu.cycles;
             }
@@ -253,13 +248,13 @@ export class GameBoyAdvanceInterruptHandler {
         if (this.cpu.cycles >= timer1.nextEvent) {
           timer1.lastEvent = timer1.nextEvent;
           timer1.nextEvent += timer1.overflowInterval;
-          if (!timer1.countUp || this.io.registers[ioAddr.TM1CNT_LO >> 1] == 0x10000) {
+          if (!timer1.cascade || this.io.registers[ioAddr.TM1CNT_LO >> 1] == 0x10000) {
             this.io.registers[ioAddr.TM1CNT_LO >> 1] = timer1.reload;
           }
           timer1.oldReload = timer1.reload;
 
           if (timer1.doIrq) this.raiseIRQ(irqIdx.TIMER1);
-          if (timer1.countUp) timer1.nextEvent = 0;
+          if (timer1.cascade) timer1.nextEvent = 0;
 
           if (this.audio?.enabled) {
             if (this.audio?.enableChannelA && this.audio?.soundTimerA && this.audio?.dmaA >= 0) {
@@ -272,7 +267,7 @@ export class GameBoyAdvanceInterruptHandler {
           }
 
           const timer2 = this.timers[2];
-          if (timer2.countUp) {
+          if (timer2.cascade) {
             if (++this.io.registers[ioAddr.TM2CNT_LO >> 1] == 0x10000) {
               timer2.nextEvent = this.cpu.cycles;
             }
@@ -285,16 +280,16 @@ export class GameBoyAdvanceInterruptHandler {
         if (this.cpu.cycles >= timer2.nextEvent) {
           timer2.lastEvent = timer2.nextEvent;
           timer2.nextEvent += timer2.overflowInterval;
-          if (!timer2.countUp || this.io.registers[ioAddr.TM2CNT_LO >> 1] == 0x10000) {
+          if (!timer2.cascade || this.io.registers[ioAddr.TM2CNT_LO >> 1] == 0x10000) {
             this.io.registers[ioAddr.TM2CNT_LO >> 1] = timer2.reload;
           }
           timer2.oldReload = timer2.reload;
 
           if (timer2.doIrq) this.raiseIRQ(irqIdx.TIMER2);
-          if (timer2.countUp) timer2.nextEvent = 0;
+          if (timer2.cascade) timer2.nextEvent = 0;
 
           const timer3 = this.timers[3];
-          if (timer3.countUp) {
+          if (timer3.cascade) {
             if (++this.io.registers[ioAddr.TM3CNT_LO >> 1] == 0x10000) {
               timer3.nextEvent = this.cpu.cycles;
             }
@@ -307,13 +302,13 @@ export class GameBoyAdvanceInterruptHandler {
         if (this.cpu.cycles >= timer3.nextEvent) {
           timer3.lastEvent = timer3.nextEvent;
           timer3.nextEvent += timer3.overflowInterval;
-          if (!timer3.countUp || this.io.registers[ioAddr.TM3CNT_LO >> 1] == 0x10000) {
+          if (!timer3.cascade || this.io.registers[ioAddr.TM3CNT_LO >> 1] == 0x10000) {
             this.io.registers[ioAddr.TM3CNT_LO >> 1] = timer3.reload;
           }
           timer3.oldReload = timer3.reload;
 
           if (timer3.doIrq) this.raiseIRQ(irqIdx.TIMER3);
-          if (timer3.countUp) timer3.nextEvent = 0;
+          if (timer3.cascade) timer3.nextEvent = 0;
         }
       }
     }
@@ -423,20 +418,18 @@ export class GameBoyAdvanceInterruptHandler {
       }
       case 0x06: {
         // Div
-        const result = (this.cpu.gprs[0] | 0) / (this.cpu.gprs[1] | 0);
-        const mod = (this.cpu.gprs[0] | 0) % (this.cpu.gprs[1] | 0);
-        this.cpu.gprs[0] = result | 0;
-        this.cpu.gprs[1] = mod | 0;
-        this.cpu.gprs[3] = Math.abs(result | 0);
+        const res = divide(this.cpu.gprs[0], this.cpu.gprs[1]);
+        this.cpu.gprs[0] = res[0];
+        this.cpu.gprs[1] = res[1];
+        this.cpu.gprs[3] = res[2];
         break;
       }
       case 0x07: {
         // DivArm
-        const result = (this.cpu.gprs[1] | 0) / (this.cpu.gprs[0] | 0);
-        const mod = (this.cpu.gprs[1] | 0) % (this.cpu.gprs[0] | 0);
-        this.cpu.gprs[0] = result | 0;
-        this.cpu.gprs[1] = mod | 0;
-        this.cpu.gprs[3] = Math.abs(result | 0);
+        const res = divide(this.cpu.gprs[1], this.cpu.gprs[0]);
+        this.cpu.gprs[0] = res[0];
+        this.cpu.gprs[1] = res[1];
+        this.cpu.gprs[3] = res[2];
         break;
       }
       case 0x08: {
@@ -666,59 +659,60 @@ export class GameBoyAdvanceInterruptHandler {
 
   pollNextEvent() {
     let nextEvent = this.video?.nextEvent || 0;
-    let test;
 
     if (this.audio?.enabled) {
-      test = this.audio?.nextEvent;
+      const test = this.audio?.nextEvent;
       if (!nextEvent || test < nextEvent) nextEvent = test;
     }
 
     if (this.timersEnabled) {
-      let timer = this.timers[0];
-      test = timer.nextEvent;
-      if (timer.enable && test && (!nextEvent || test < nextEvent)) {
-        nextEvent = test;
+      const timer0 = this.timers[0];
+      const test0 = timer0.nextEvent;
+      if (timer0.enable && test0 && (!nextEvent || test0 < nextEvent)) {
+        nextEvent = test0;
       }
 
-      timer = this.timers[1];
-      test = timer.nextEvent;
-      if (timer.enable && test && (!nextEvent || test < nextEvent)) {
-        nextEvent = test;
+      const timer1 = this.timers[1];
+      const test1 = timer1.nextEvent;
+      if (timer1.enable && test1 && (!nextEvent || test1 < nextEvent)) {
+        nextEvent = test1;
       }
-      timer = this.timers[2];
-      test = timer.nextEvent;
-      if (timer.enable && test && (!nextEvent || test < nextEvent)) {
-        nextEvent = test;
+
+      const timer2 = this.timers[2];
+      const test2 = timer2.nextEvent;
+      if (timer2.enable && test2 && (!nextEvent || test2 < nextEvent)) {
+        nextEvent = test2;
       }
-      timer = this.timers[3];
-      test = timer.nextEvent;
-      if (timer.enable && test && (!nextEvent || test < nextEvent)) {
-        nextEvent = test;
+
+      const timer3 = this.timers[3];
+      const test3 = timer3.nextEvent;
+      if (timer3.enable && test3 && (!nextEvent || test3 < nextEvent)) {
+        nextEvent = test3;
       }
     }
 
-    let dma = this.dma[0];
-    test = dma.nextIRQ;
-    if (dma.enable && dma.doIrq && test && (!nextEvent || test < nextEvent)) {
-      nextEvent = test;
+    const dma0 = this.dma[0];
+    const test0 = dma0.nextIRQ;
+    if (dma0.enable && dma0.doIrq && test0 && (!nextEvent || test0 < nextEvent)) {
+      nextEvent = test0;
     }
 
-    dma = this.dma[1];
-    test = dma.nextIRQ;
-    if (dma.enable && dma.doIrq && test && (!nextEvent || test < nextEvent)) {
-      nextEvent = test;
+    const dma1 = this.dma[1];
+    const test1 = dma1.nextIRQ;
+    if (dma1.enable && dma1.doIrq && test1 && (!nextEvent || test1 < nextEvent)) {
+      nextEvent = test1;
     }
 
-    dma = this.dma[2];
-    test = dma.nextIRQ;
-    if (dma.enable && dma.doIrq && test && (!nextEvent || test < nextEvent)) {
-      nextEvent = test;
+    const dma2 = this.dma[2];
+    const test2 = dma2.nextIRQ;
+    if (dma2.enable && dma2.doIrq && test2 && (!nextEvent || test2 < nextEvent)) {
+      nextEvent = test2;
     }
 
-    dma = this.dma[3];
-    test = dma.nextIRQ;
-    if (dma.enable && dma.doIrq && test && (!nextEvent || test < nextEvent)) {
-      nextEvent = test;
+    const dma3 = this.dma[3];
+    const test3 = dma3.nextIRQ;
+    if (dma3.enable && dma3.doIrq && test3 && (!nextEvent || test3 < nextEvent)) {
+      nextEvent = test3;
     }
 
     if (nextEvent >= this.cpu.cycles) {
@@ -824,45 +818,45 @@ export class GameBoyAdvanceInterruptHandler {
     this.timers[timer].reload = reload & 0xffff;
   }
 
+  /**
+   * triggered on TMnCNT_HI write
+   */
   timerWriteControl(timer: number, control: number) {
     const currentTimer = this.timers[timer];
     const oldPrescale = currentTimer.prescaleBits;
-    switch (control & 0x0003) {
-      case 0x0000:
-        currentTimer.prescaleBits = 0;
-        break;
-      case 0x0001:
-        currentTimer.prescaleBits = 6;
-        break;
-      case 0x0002:
-        currentTimer.prescaleBits = 8;
-        break;
-      case 0x0003:
-        currentTimer.prescaleBits = 10;
-        break;
-    }
-    currentTimer.countUp = !!(control & 0x0004);
-    currentTimer.doIrq = !!(control & 0x0040);
+    currentTimer.prescaleBits = prescaleBitsLt[control & 0b11];
+    currentTimer.cascade = !!(control & (0b1 << 2));
+    currentTimer.doIrq = !!(control & (0b1 << 6));
     currentTimer.overflowInterval = (0x10000 - currentTimer.reload) << currentTimer.prescaleBits;
+
     const wasEnabled = currentTimer.enable;
     currentTimer.enable = !!(((control & 0x0080) >> 7) << timer);
+
     if (!wasEnabled && currentTimer.enable) {
-      if (!currentTimer.countUp) {
+      // disable -> enable
+      if (!currentTimer.cascade) {
         currentTimer.lastEvent = this.cpu.cycles;
         currentTimer.nextEvent = this.cpu.cycles + currentTimer.overflowInterval;
       } else {
         currentTimer.nextEvent = 0;
       }
-      this.io.registers[(ioAddr.TM0CNT_LO + (timer << 2)) >> 1] = currentTimer.reload;
+
+      // reload counter
+      const ofs = (ioAddr.TM0CNT_LO + (timer << 2)) >> 1;
+      this.io.registers[ofs] = currentTimer.reload;
       currentTimer.oldReload = currentTimer.reload;
-      ++this.timersEnabled;
+
+      this.timersEnabled++;
     } else if (wasEnabled && !currentTimer.enable) {
-      if (!currentTimer.countUp) {
-        this.io.registers[(ioAddr.TM0CNT_LO + (timer << 2)) >> 1] =
-          (currentTimer.oldReload + (this.cpu.cycles - currentTimer.lastEvent)) >> oldPrescale;
+      // enable -> disable
+      if (!currentTimer.cascade) {
+        const delta = (this.cpu.cycles - currentTimer.lastEvent) >> oldPrescale;
+        const ofs = (ioAddr.TM0CNT_LO + (timer << 2)) >> 1;
+        this.io.registers[ofs] = currentTimer.oldReload + delta;
       }
-      --this.timersEnabled;
-    } else if (currentTimer.prescaleBits != oldPrescale && !currentTimer.countUp) {
+
+      this.timersEnabled--;
+    } else if (currentTimer.prescaleBits != oldPrescale && !currentTimer.cascade) {
       // FIXME: this might be before present
       currentTimer.nextEvent = currentTimer.lastEvent + currentTimer.overflowInterval;
     }
@@ -873,7 +867,7 @@ export class GameBoyAdvanceInterruptHandler {
 
   timerRead(timer: number): number {
     const currentTimer = this.timers[timer];
-    if (currentTimer.enable && !currentTimer.countUp) {
+    if (currentTimer.enable && !currentTimer.cascade) {
       return (
         (currentTimer.oldReload + (this.cpu.cycles - currentTimer.lastEvent)) >>
         currentTimer.prescaleBits

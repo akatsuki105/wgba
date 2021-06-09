@@ -1,3 +1,21 @@
+const I32_MIN = -2147483647 - 1;
+
+export const divide = (num: number, denom: number): [number, number, number] => {
+  if (denom == 0) {
+    // If abs(num) > 1, this should hang, but that would be painful to
+    // emulate in HLE, and no game will get into a state under normal
+    // operation where it hangs...
+    return [num < 0 ? -1 : 1, num, 1];
+  } else if (denom == -1 && num == I32_MIN) {
+    return [I32_MIN, 0, I32_MIN];
+  } else {
+    const result = (num | 0) / (denom | 0);
+    const mod = (num | 0) % (denom | 0);
+
+    return [result | 0, mod | 0, Math.abs(result | 0)];
+  }
+};
+
 export const arcTan = (i: number): [number, number, number] => {
   const a = -((i * i) >> 14);
   let b = ((0xa9 * a) >> 14) + 0x390;

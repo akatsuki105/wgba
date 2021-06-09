@@ -10,14 +10,13 @@ import { MemoryProxy } from './video/proxy';
 export class MemoryView {
   buffer: ArrayBufferLike;
   view: DataView;
-  mask: number;
+  mask: number; // using when resolving memory mirror
   mask8: number;
   mask16: number;
   mask32: number;
   icache: any[];
 
   constructor(memory: ArrayBufferLike, offset = 0) {
-    // this.inherit();
     this.buffer = memory;
     this.view = new DataView(this.buffer, typeof offset === 'number' ? offset : 0);
     this.mask = memory.byteLength - 1;
@@ -205,7 +204,7 @@ class BadMemory {
   }
 
   load16(offset: number) {
-    return this.mmu.load16(this.cpu.gprs[PC] - this.cpu.instructionWidth + (offset & 0x2));
+    return this.mmu.load16(this.cpu.gprs[PC]);
   }
 
   loadU8(offset: number) {
@@ -213,7 +212,7 @@ class BadMemory {
   }
 
   loadU16(offset: number) {
-    return this.mmu.loadU16(this.cpu.gprs[PC] - this.cpu.instructionWidth + (offset & 0x2));
+    return this.mmu.loadU16(this.cpu.gprs[PC]);
   }
 
   load32(offset: number) {
@@ -335,7 +334,7 @@ export class GameBoyAdvanceMMU {
   cpu: ARMCore;
   core: GameBoyAdvance;
   memory: any;
-  badMemory: any;
+  badMemory: BadMemory;
 
   DMA_REGISTER: any;
   waitstates: any;
@@ -404,6 +403,7 @@ export class GameBoyAdvanceMMU {
     this.ICACHE_PAGE_BITS = 8;
     this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
     this.cart = defaultCart;
+    this.badMemory = new BadMemory(this.cpu, this);
   }
 
   mmap(region: number, object: GameBoyAdvanceIO | MemoryProxy) {
@@ -411,7 +411,6 @@ export class GameBoyAdvanceMMU {
   }
 
   clear() {
-    this.badMemory = new BadMemory(this.cpu, this);
     this.memory = [
       this.bios,
       this.badMemory,

@@ -258,7 +258,6 @@ export class GameBoyAdvanceIO {
       case ioAddr.SOUND1CNT_LO:
       case ioAddr.SOUND3CNT_LO:
       case ioAddr.SOUNDCNT_LO:
-      case ioAddr.SOUNDCNT_HI:
       case ioAddr.SOUNDBIAS:
       case ioAddr.BLDCNT:
       case ioAddr.BLDALPHA:
@@ -300,10 +299,24 @@ export class GameBoyAdvanceIO {
         return this.registers[offset >> 1] & 0xff00;
       case ioAddr.SOUND4CNT_HI:
         return this.registers[offset >> 1] & 0x40ff;
-      case ioAddr.SOUNDCNT_X:
+      case ioAddr.SOUNDCNT_HI:
+        return this.registers[offset >> 1] & 0x770f;
+      case ioAddr.SOUNDCNT_X: {
         this.core.STUB('Unimplemented sound register read: SOUNDCNT_X');
 
         return this.registers[offset >> 1] | 0x0000;
+      }
+
+      // WAVE RAM
+      case ioAddr.WAVE_RAM0_LO:
+      case ioAddr.WAVE_RAM0_HI:
+      case ioAddr.WAVE_RAM1_LO:
+      case ioAddr.WAVE_RAM1_HI:
+      case ioAddr.WAVE_RAM2_LO:
+      case ioAddr.WAVE_RAM2_HI:
+      case ioAddr.WAVE_RAM3_LO:
+      case ioAddr.WAVE_RAM3_HI:
+        return this.audio?.readWaveData(offset - ioAddr.WAVE_RAM0_LO, 2) || 0;
 
       // Timers
       case ioAddr.TM0CNT_LO:
@@ -380,10 +393,11 @@ export class GameBoyAdvanceIO {
       case ioAddr.FIFO_A_LO:
       case ioAddr.FIFO_A_HI:
       case ioAddr.FIFO_B_LO:
-      case ioAddr.FIFO_B_HI:
+      case ioAddr.FIFO_B_HI: {
         this.core.WARN('Read for write-only register: 0x' + offset.toString(16));
 
         return this.core.mmu.badMemory.loadU16(0);
+      }
 
       case ioAddr.MOSAIC:
         this.core.WARN('Read for write-only register: 0x' + offset.toString(16));
@@ -416,6 +430,7 @@ export class GameBoyAdvanceIO {
   }
 
   store8(offset: number, value: number) {
+    value &= 0xff;
     switch (offset) {
       case ioAddr.WININ:
         value &= 0x3f;
@@ -485,25 +500,33 @@ export class GameBoyAdvanceIO {
   store16(offset: number, value: number) {
     switch (offset) {
       // Video
-      case ioAddr.DISPCNT:
+      case ioAddr.DISPCNT: {
         this.video?.renderPath.writeDisplayControl(value);
         break;
-      case ioAddr.DISPSTAT:
+      }
+      case ioAddr.DISPSTAT: {
         value &= this.video?.DISPSTAT_MASK || 0;
         this.video?.writeDisplayStat(value);
         break;
-      case ioAddr.BG0CNT:
+      }
+      case ioAddr.BG0CNT: {
+        value &= 0xdfff;
         this.video?.renderPath.writeBackgroundControl(0, value);
         break;
-      case ioAddr.BG1CNT:
+      }
+      case ioAddr.BG1CNT: {
+        value &= 0xdfff;
         this.video?.renderPath.writeBackgroundControl(1, value);
         break;
-      case ioAddr.BG2CNT:
+      }
+      case ioAddr.BG2CNT: {
         this.video?.renderPath.writeBackgroundControl(2, value);
         break;
-      case ioAddr.BG3CNT:
+      }
+      case ioAddr.BG3CNT: {
         this.video?.renderPath.writeBackgroundControl(3, value);
         break;
+      }
       case ioAddr.BG0HOFS:
         this.video?.renderPath.writeBackgroundHOffset(0, value);
         break;

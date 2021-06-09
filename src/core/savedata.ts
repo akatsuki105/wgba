@@ -10,9 +10,8 @@ class MemoryView {
   icache: any[];
 
   constructor(memory: ArrayBufferLike, offset = 0) {
-    // this.inherit();
     this.buffer = memory;
-    this.view = new DataView(this.buffer, typeof offset === 'number' ? offset : 0);
+    this.view = new DataView(this.buffer, offset);
     this.mask = memory.byteLength - 1;
 
     this.mask8 = 0;
