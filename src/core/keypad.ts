@@ -16,6 +16,8 @@ const keyIdx = {
 } as const;
 
 export class GameBoyAdvanceKeypad {
+  core: GameBoyAdvance;
+
   KEYCODE_LEFT: string;
   KEYCODE_UP: string;
   KEYCODE_RIGHT: string;
@@ -42,7 +44,6 @@ export class GameBoyAdvanceKeypad {
   eatInput: boolean;
   gamepads: Gamepad[];
   remappingKeyId: string;
-  core: GameBoyAdvance;
 
   constructor(core: GameBoyAdvance) {
     this.core = core;

@@ -76,6 +76,7 @@ class MemoryView {
 
 export class SRAMSavedata extends MemoryView {
   writePending: boolean;
+
   constructor(size: number) {
     super(new ArrayBuffer(size), 0);
     this.writePending = false;
@@ -100,17 +101,20 @@ export class SRAMSavedata extends MemoryView {
   }
 }
 
-export class FlashSavedata extends MemoryView {
-  COMMAND_WIPE: number;
-  COMMAND_ERASE_SECTOR: number;
-  COMMAND_ERASE: number;
-  COMMAND_ID: number;
-  COMMAND_WRITE: number;
-  COMMAND_SWITCH_BANK: number;
-  COMMAND_TERMINATE_ID: number;
+const flashCmd = {
+  wipe: 0x10,
+  eraseSector: 0x30,
+  erase: 0x80,
+  id: 0x90,
+  write: 0xa0,
+  switchBank: 0xb0,
+  terminateId: 0xf0,
+} as const;
 
-  ID_PANASONIC: number;
-  ID_SANYO: number;
+const panasonic = 0x1b32;
+const sanyo = 0x1362;
+
+export class FlashSavedata extends MemoryView {
   bank0: DataView;
   bank1: DataView | null;
   bank: DataView;
@@ -127,23 +131,12 @@ export class FlashSavedata extends MemoryView {
   constructor(size: number) {
     super(new ArrayBuffer(size), 0);
 
-    this.COMMAND_WIPE = 0x10;
-    this.COMMAND_ERASE_SECTOR = 0x30;
-    this.COMMAND_ERASE = 0x80;
-    this.COMMAND_ID = 0x90;
-    this.COMMAND_WRITE = 0xa0;
-    this.COMMAND_SWITCH_BANK = 0xb0;
-    this.COMMAND_TERMINATE_ID = 0xf0;
-
-    this.ID_PANASONIC = 0x1b32;
-    this.ID_SANYO = 0x1362;
-
     this.bank0 = new DataView(this.buffer, 0, 0x00010000);
     if (size > 0x00010000) {
-      this.id = this.ID_SANYO;
+      this.id = sanyo;
       this.bank1 = new DataView(this.buffer, 0x00010000);
     } else {
-      this.id = this.ID_PANASONIC;
+      this.id = panasonic;
       this.bank1 = null;
     }
     this.bank = this.bank0;
@@ -194,13 +187,13 @@ export class FlashSavedata extends MemoryView {
         if (offset == 0x5555) {
           if (this.second == 0x55) {
             switch (value) {
-              case this.COMMAND_ERASE:
+              case flashCmd.erase:
                 this.pendingCommand = value;
                 break;
-              case this.COMMAND_ID:
+              case flashCmd.id:
                 this.idMode = true;
                 break;
-              case this.COMMAND_TERMINATE_ID:
+              case flashCmd.terminateId:
                 this.idMode = false;
                 break;
               default:
@@ -223,16 +216,16 @@ export class FlashSavedata extends MemoryView {
           }
         }
         break;
-      case this.COMMAND_ERASE:
+      case flashCmd.erase:
         switch (value) {
-          case this.COMMAND_WIPE:
+          case flashCmd.wipe:
             if (offset == 0x5555) {
               for (let i = 0; i < this.view.byteLength; i += 4) {
                 this.view.setInt32(i, -1);
               }
             }
             break;
-          case this.COMMAND_ERASE_SECTOR:
+          case flashCmd.eraseSector:
             if ((offset & 0x0fff) == 0) {
               for (let i = offset; i < offset + 0x1000; i += 4) {
                 this.bank.setInt32(i, -1);
@@ -243,13 +236,13 @@ export class FlashSavedata extends MemoryView {
         this.pendingCommand = 0;
         this.command = 0;
         break;
-      case this.COMMAND_WRITE:
+      case flashCmd.write:
         this.bank.setInt8(offset, value);
         this.command = 0;
 
         this.writePending = true;
         break;
-      case this.COMMAND_SWITCH_BANK:
+      case flashCmd.switchBank:
         if (this.bank1 && offset == 0) {
           this.bank = value == 1 ? this.bank1 : this.bank0;
         }
@@ -280,6 +273,14 @@ export class FlashSavedata extends MemoryView {
   }
 }
 
+const eepromCmd = {
+  null: 0,
+  pending: 1,
+  write: 2,
+  readPending: 3,
+  read: 4,
+} as const;
+
 export class EEPROMSavedata extends MemoryView {
   writeAddress: number;
   readBitsRemaining: number;
@@ -293,12 +294,6 @@ export class EEPROMSavedata extends MemoryView {
   writePending: boolean;
 
   dma: any;
-
-  COMMAND_NULL: number;
-  COMMAND_PENDING: number;
-  COMMAND_WRITE: number;
-  COMMAND_READ_PENDING: number;
-  COMMAND_READ: number;
 
   constructor(size: number, mmu: GameBoyAdvanceMMU) {
     super(new ArrayBuffer(size), 0);
@@ -315,12 +310,6 @@ export class EEPROMSavedata extends MemoryView {
     this.writePending = false;
 
     this.dma = mmu.core.irq.dma[3];
-
-    this.COMMAND_NULL = 0;
-    this.COMMAND_PENDING = 1;
-    this.COMMAND_WRITE = 2;
-    this.COMMAND_READ_PENDING = 3;
-    this.COMMAND_READ = 4;
   }
 
   load8(offset: number) {
@@ -340,13 +329,13 @@ export class EEPROMSavedata extends MemoryView {
   }
 
   loadU16(offset: number) {
-    if (this.command != this.COMMAND_READ || !this.dma.enable) return 1;
+    if (this.command != eepromCmd.read || !this.dma.enable) return 1;
     --this.readBitsRemaining;
     if (this.readBitsRemaining < 64) {
       const step = 63 - this.readBitsRemaining;
       const data = this.view.getUint8((this.readAddress + step) >> 3) >> (0x7 - (step & 0x7));
       if (!this.readBitsRemaining) {
-        this.command = this.COMMAND_NULL;
+        this.command = eepromCmd.null;
       }
 
       return data & 0x1;
@@ -368,14 +357,14 @@ export class EEPROMSavedata extends MemoryView {
   store16(offset: number, value: number) {
     switch (this.command) {
       // Read header
-      case this.COMMAND_NULL:
+      case eepromCmd.null:
       default:
         this.command = value & 0x1;
         break;
-      case this.COMMAND_PENDING:
+      case eepromCmd.pending:
         this.command <<= 1;
         this.command |= value & 0x1;
-        if (this.command == this.COMMAND_WRITE) {
+        if (this.command == eepromCmd.write) {
           if (!this.realSize) {
             const bits = this.dma.count - 67;
             this.realSize = 8 << bits;
@@ -394,13 +383,13 @@ export class EEPROMSavedata extends MemoryView {
         }
         break;
       // Do commands
-      case this.COMMAND_WRITE:
+      case eepromCmd.write:
         // Write
         if (--this.commandBitsRemaining > 64) {
           this.writeAddress <<= 1;
           this.writeAddress |= (value & 0x1) << 6;
         } else if (this.commandBitsRemaining <= 0) {
-          this.command = this.COMMAND_NULL;
+          this.command = eepromCmd.null;
           this.writePending = true;
         } else {
           let current = this.view.getUint8(this.writeAddress >> 3);
@@ -410,7 +399,7 @@ export class EEPROMSavedata extends MemoryView {
           ++this.writeAddress;
         }
         break;
-      case this.COMMAND_READ_PENDING:
+      case eepromCmd.readPending:
         // Read
         if (--this.commandBitsRemaining > 0) {
           this.readAddress <<= 1;
@@ -419,7 +408,7 @@ export class EEPROMSavedata extends MemoryView {
           }
         } else {
           this.readBitsRemaining = 68;
-          this.command = this.COMMAND_READ;
+          this.command = eepromCmd.read;
         }
         break;
     }

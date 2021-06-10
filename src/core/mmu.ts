@@ -1,7 +1,7 @@
 import { ARMCore, execMode, PC } from './core';
 import { GameBoyAdvance } from './gba';
 import { GameBoyAdvanceGPIO } from './gpio';
-import { GameBoyAdvanceIO, ioAddr } from './io';
+import { GameBoyAdvanceIO } from './io';
 import { DMA } from './irq';
 import { EEPROMSavedata, FlashSavedata, SRAMSavedata } from './savedata';
 import { Serializer } from './util';
@@ -274,6 +274,20 @@ export const region = {
   CART_SRAM: 0xe,
 } as const;
 
+export const regionBase = {
+  BIOS: 0x00000000,
+  WORKING_RAM: 0x02000000,
+  WORKING_IRAM: 0x03000000,
+  IO: 0x04000000,
+  PALETTE_RAM: 0x05000000,
+  VRAM: 0x06000000,
+  OAM: 0x07000000,
+  CART0: 0x08000000,
+  CART1: 0x0a000000,
+  CART2: 0x0c000000,
+  CART_SRAM: 0x0e000000,
+} as const;
+
 export const size = {
   BIOS: 0x00004000,
   WORKING_RAM: 0x00040000,
@@ -291,41 +305,45 @@ export const size = {
   CART_EEPROM: 0x00002000,
 } as const;
 
-export class GameBoyAdvanceMMU {
-  BASE_BIOS: number;
-  BASE_WORKING_RAM: number;
-  BASE_WORKING_IRAM: number;
-  BASE_IO: number;
-  BASE_PALETTE_RAM: number;
-  BASE_VRAM: number;
-  BASE_OAM: number;
-  BASE_CART0: number;
-  BASE_CART1: number;
-  BASE_CART2: number;
-  BASE_CART_SRAM: number;
+const dmaTiming = {
+  now: 0,
+  vblank: 1,
+  hblank: 2,
+  custom: 3,
+} as const;
 
-  BASE_MASK: number;
+const dmaRegister = [
+  0x0ba >> 1, // DMA0CNT_HI >> 1
+  0x0c6 >> 1, // DMA1CNT_HI >> 1
+  0x0d2 >> 1, // DMA2CNT_HI >> 1
+  0x0de >> 1, // DMA3CNT_HI >> 1
+] as const;
+
+const dmaAddrCtl = {
+  increment: 0,
+  decrement: 1,
+  fixed: 2,
+  incrementReload: 3,
+} as const;
+
+const DMA_OFFSET = [1, -1, 0, 1] as const;
+
+const ROM_WS = [4, 3, 2, 8] as const;
+const ROM_WS_SEQ = [
+  [2, 1],
+  [4, 1],
+  [8, 1],
+] as const;
+// const NULLWAIT = Array(256).fill(0);
+
+export class GameBoyAdvanceMMU {
   BASE_OFFSET: number;
   OFFSET_MASK: number;
-
-  DMA_TIMING_NOW: number;
-  DMA_TIMING_VBLANK: number;
-  DMA_TIMING_HBLANK: number;
-  DMA_TIMING_CUSTOM: number;
-
-  DMA_INCREMENT: number;
-  DMA_DECREMENT: number;
-  DMA_FIXED: number;
-  DMA_INCREMENT_RELOAD: number;
-  DMA_OFFSET: number[];
 
   WAITSTATES: number[];
   WAITSTATES_32: number[];
   WAITSTATES_SEQ: number[];
   WAITSTATES_SEQ_32: number[];
-  NULLWAIT: number[];
-  ROM_WS: number[];
-  ROM_WS_SEQ: [number, number][];
 
   ICACHE_PAGE_BITS: number;
   PAGE_MASK: number;
@@ -336,13 +354,12 @@ export class GameBoyAdvanceMMU {
   memory: any;
   badMemory: BadMemory;
 
-  DMA_REGISTER: any;
-  waitstates: any;
-  waitstatesSeq: any;
-  waitstates32: any;
-  waitstatesSeq32: any;
-  waitstatesPrefetch: any;
-  waitstatesPrefetch32: any;
+  waitstates: number[];
+  waitstatesSeq: number[];
+  waitstates32: number[];
+  waitstatesSeq32: number[];
+  waitstatesPrefetch: number[];
+  waitstatesPrefetch32: number[];
 
   cart: Cart;
   save: any;
@@ -351,59 +368,32 @@ export class GameBoyAdvanceMMU {
     this.cpu = cpu;
     this.core = core;
 
-    this.BASE_BIOS = 0x00000000;
-    this.BASE_WORKING_RAM = 0x02000000;
-    this.BASE_WORKING_IRAM = 0x03000000;
-    this.BASE_IO = 0x04000000;
-    this.BASE_PALETTE_RAM = 0x05000000;
-    this.BASE_VRAM = 0x06000000;
-    this.BASE_OAM = 0x07000000;
-    this.BASE_CART0 = 0x08000000;
-    this.BASE_CART1 = 0x0a000000;
-    this.BASE_CART2 = 0x0c000000;
-    this.BASE_CART_SRAM = 0x0e000000;
-
-    this.BASE_MASK = 0x0f000000;
     this.BASE_OFFSET = 24;
     this.OFFSET_MASK = 0x00ffffff;
-
-    this.DMA_TIMING_NOW = 0;
-    this.DMA_TIMING_VBLANK = 1;
-    this.DMA_TIMING_HBLANK = 2;
-    this.DMA_TIMING_CUSTOM = 3;
-
-    this.DMA_INCREMENT = 0;
-    this.DMA_DECREMENT = 1;
-    this.DMA_FIXED = 2;
-    this.DMA_INCREMENT_RELOAD = 3;
-
-    this.DMA_OFFSET = [1, -1, 0, 1];
 
     this.WAITSTATES = [0, 0, 2, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4];
     this.WAITSTATES_32 = [0, 0, 5, 0, 0, 1, 0, 1, 7, 7, 9, 9, 13, 13, 8];
     this.WAITSTATES_SEQ = [0, 0, 2, 0, 0, 0, 0, 0, 2, 2, 4, 4, 8, 8, 4];
     this.WAITSTATES_SEQ_32 = [0, 0, 5, 0, 0, 1, 0, 1, 5, 5, 9, 9, 17, 17, 8];
-    this.NULLWAIT = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
     for (let i = 15; i < 256; ++i) {
       this.WAITSTATES[i] = 0;
       this.WAITSTATES_32[i] = 0;
       this.WAITSTATES_SEQ[i] = 0;
       this.WAITSTATES_SEQ_32[i] = 0;
-      this.NULLWAIT[i] = 0;
     }
-
-    this.ROM_WS = [4, 3, 2, 8];
-    this.ROM_WS_SEQ = [
-      [2, 1],
-      [4, 1],
-      [8, 1],
-    ];
 
     this.ICACHE_PAGE_BITS = 8;
     this.PAGE_MASK = (2 << this.ICACHE_PAGE_BITS) - 1;
     this.cart = defaultCart;
     this.badMemory = new BadMemory(this.cpu, this);
+
+    this.waitstates = this.WAITSTATES.slice(0);
+    this.waitstatesSeq = this.WAITSTATES_SEQ.slice(0);
+    this.waitstates32 = this.WAITSTATES_32.slice(0);
+    this.waitstatesSeq32 = this.WAITSTATES_SEQ_32.slice(0);
+    this.waitstatesPrefetch = this.WAITSTATES_SEQ.slice(0);
+    this.waitstatesPrefetch32 = this.WAITSTATES_SEQ_32.slice(0);
   }
 
   mmap(region: number, object: GameBoyAdvanceIO | MemoryProxy) {
@@ -443,13 +433,6 @@ export class GameBoyAdvanceMMU {
 
     this.cart = defaultCart;
     this.save = null;
-
-    this.DMA_REGISTER = [
-      ioAddr.DMA0CNT_HI >> 1,
-      ioAddr.DMA1CNT_HI >> 1,
-      ioAddr.DMA2CNT_HI >> 1,
-      ioAddr.DMA3CNT_HI >> 1,
-    ];
   }
 
   freeze(): FrostMMU {
@@ -696,16 +679,16 @@ export class GameBoyAdvanceMMU {
 
   scheduleDma(number: number, info: DMA) {
     switch (info.timing) {
-      case this.DMA_TIMING_NOW:
+      case dmaTiming.now:
         this.serviceDma(number, info);
         break;
-      case this.DMA_TIMING_HBLANK:
+      case dmaTiming.hblank:
         // Handled implicitly
         break;
-      case this.DMA_TIMING_VBLANK:
+      case dmaTiming.vblank:
         // Handled implicitly
         break;
-      case this.DMA_TIMING_CUSTOM:
+      case dmaTiming.custom:
         switch (number) {
           case 0:
             this.core.WARN('Discarding invalid DMA0 scheduling');
@@ -726,7 +709,7 @@ export class GameBoyAdvanceMMU {
     const len = this.cpu.irq?.dma.length || 0;
     for (let i = 0; i < len; ++i) {
       const dma = this.cpu.irq?.dma[i];
-      if (dma && dma.enable && dma.timing == this.DMA_TIMING_HBLANK) this.serviceDma(i, dma);
+      if (dma && dma.enable && dma.timing == dmaTiming.hblank) this.serviceDma(i, dma);
     }
   }
 
@@ -734,7 +717,7 @@ export class GameBoyAdvanceMMU {
     const len = this.cpu.irq?.dma.length || 0;
     for (let i = 0; i < len; ++i) {
       const dma = this.cpu.irq?.dma[i];
-      if (dma && dma.enable && dma.timing == this.DMA_TIMING_VBLANK) this.serviceDma(i, dma);
+      if (dma && dma.enable && dma.timing == dmaTiming.vblank) this.serviceDma(i, dma);
     }
   }
 
@@ -742,8 +725,8 @@ export class GameBoyAdvanceMMU {
     if (!info.enable) return; // There was a DMA scheduled that got canceled
 
     const width = info.width;
-    const sourceOffset = this.DMA_OFFSET[info.srcControl] * width;
-    const destOffset = this.DMA_OFFSET[info.dstControl] * width;
+    const sourceOffset = DMA_OFFSET[info.srcControl] * width;
+    const destOffset = DMA_OFFSET[info.dstControl] * width;
     let wordsRemaining = info.nextCount;
     let source = info.nextSource & this.OFFSET_MASK;
     let dest = info.nextDest & this.OFFSET_MASK;
@@ -861,10 +844,10 @@ export class GameBoyAdvanceMMU {
 
       // Clear the enable bit in memory
       const io = this.memory[region.IO] as GameBoyAdvanceIO;
-      io.registers[this.DMA_REGISTER[number]] &= 0x7fe0;
+      io.registers[dmaRegister[number]] &= 0x7fe0;
     } else {
       info.nextCount = info.count;
-      if (info.dstControl == this.DMA_INCREMENT_RELOAD) info.nextDest = info.dest;
+      if (info.dstControl == dmaAddrCtl.incrementReload) info.nextDest = info.dest;
       this.scheduleDma(number, info);
     }
   }
@@ -876,21 +859,18 @@ export class GameBoyAdvanceMMU {
     const [ws2, ws2seq] = [(word & 0x0300) >> 8, (word & 0x0400) >> 10];
     const prefetch = word & 0x4000;
 
-    this.waitstates[region.CART_SRAM] = this.ROM_WS[sram];
-    this.waitstatesSeq[region.CART_SRAM] = this.ROM_WS[sram];
-    this.waitstates32[region.CART_SRAM] = this.ROM_WS[sram];
-    this.waitstatesSeq32[region.CART_SRAM] = this.ROM_WS[sram];
+    this.waitstates[region.CART_SRAM] = ROM_WS[sram];
+    this.waitstatesSeq[region.CART_SRAM] = ROM_WS[sram];
+    this.waitstates32[region.CART_SRAM] = ROM_WS[sram];
+    this.waitstatesSeq32[region.CART_SRAM] = ROM_WS[sram];
 
-    this.waitstates[region.CART0] = this.waitstates[region.CART0 + 1] = this.ROM_WS[ws0];
-    this.waitstates[region.CART1] = this.waitstates[region.CART1 + 1] = this.ROM_WS[ws1];
-    this.waitstates[region.CART2] = this.waitstates[region.CART2 + 1] = this.ROM_WS[ws2];
+    this.waitstates[region.CART0] = this.waitstates[region.CART0 + 1] = ROM_WS[ws0];
+    this.waitstates[region.CART1] = this.waitstates[region.CART1 + 1] = ROM_WS[ws1];
+    this.waitstates[region.CART2] = this.waitstates[region.CART2 + 1] = ROM_WS[ws2];
 
-    this.waitstatesSeq[region.CART0] = this.waitstatesSeq[region.CART0 + 1] =
-      this.ROM_WS_SEQ[0][ws0seq];
-    this.waitstatesSeq[region.CART1] = this.waitstatesSeq[region.CART1 + 1] =
-      this.ROM_WS_SEQ[1][ws1seq];
-    this.waitstatesSeq[region.CART2] = this.waitstatesSeq[region.CART2 + 1] =
-      this.ROM_WS_SEQ[2][ws2seq];
+    this.waitstatesSeq[region.CART0] = this.waitstatesSeq[region.CART0 + 1] = ROM_WS_SEQ[0][ws0seq];
+    this.waitstatesSeq[region.CART1] = this.waitstatesSeq[region.CART1 + 1] = ROM_WS_SEQ[1][ws1seq];
+    this.waitstatesSeq[region.CART2] = this.waitstatesSeq[region.CART2 + 1] = ROM_WS_SEQ[2][ws2seq];
 
     this.waitstates32[region.CART0] = this.waitstates32[region.CART0 + 1] =
       this.waitstates[region.CART0] + 1 + this.waitstatesSeq[region.CART0];

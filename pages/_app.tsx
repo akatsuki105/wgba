@@ -18,7 +18,7 @@ const App = ({ Component, pageProps }: AppProps): JSX.Element => {
   return (
     <>
       <Head>
-        <title>WebGBA</title>
+        <title>wgba</title>
       </Head>
       <SafeHydrate>
         <Providers>

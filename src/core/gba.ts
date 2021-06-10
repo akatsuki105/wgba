@@ -32,10 +32,10 @@ export const logLvs = {
 const SYS_ID = 'com.pokemium.wgba';
 
 export class GameBoyAdvance {
+  cpu: ARMCore;
   logLevel: number;
 
   rom: Cart;
-  cpu: ARMCore;
   mmu: GameBoyAdvanceMMU;
   io: GameBoyAdvanceIO;
   irq: GameBoyAdvanceInterruptHandler;
@@ -61,11 +61,11 @@ export class GameBoyAdvance {
   isMobile: boolean;
 
   constructor(w: Worker, reportFPS?: (f: number) => void) {
+    this.cpu = new ARMCore(this);
     this.logLevel = logLvs.ERROR | logLvs.WARN;
 
     this.rom = defaultCart;
 
-    this.cpu = new ARMCore(this);
     this.mmu = new GameBoyAdvanceMMU(this.cpu, this);
     this.io = new GameBoyAdvanceIO(this.cpu, this);
     this.audio = new GameBoyAdvanceAudio(this.cpu, this);
@@ -103,10 +103,6 @@ export class GameBoyAdvance {
   }
 
   setCanvas(canvas: HTMLCanvasElement) {
-    this.setCanvasDirect(canvas);
-  }
-
-  setCanvasDirect(canvas: HTMLCanvasElement) {
     this.context = canvas.getContext('2d', { alpha: false }) || undefined;
     this.context && this.video.setBacking(this.context);
   }

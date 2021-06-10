@@ -2,6 +2,7 @@ import { ARMCore } from './core';
 import { GameBoyAdvance } from './gba';
 import { ioAddr } from './io';
 import { CPU_FREQUENCY } from './irq';
+import { regionBase } from './mmu';
 
 const PSG_MAX = 0x80;
 const SOUND_MAX = 0x400;
@@ -804,12 +805,12 @@ export class GameBoyAdvanceAudio {
 
   scheduleFIFODma(number: number, info: any) {
     switch (info.dest) {
-      case this.cpu.mmu.BASE_IO | (ioAddr.FIFO_A_LO || 0):
+      case regionBase.IO | (ioAddr.FIFO_A_LO || 0):
         // FIXME: is this needed or a hack?
         info.dstControl = 2;
         this.dmaA = number;
         break;
-      case this.cpu.mmu.BASE_IO | (ioAddr.FIFO_B_LO || 0):
+      case regionBase.IO | (ioAddr.FIFO_B_LO || 0):
         info.dstControl = 2;
         this.dmaB = number;
         break;

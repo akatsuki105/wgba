@@ -33,6 +33,8 @@ export type FrostVideo = {
   renderPath: any;
 };
 
+export const DISPSTAT_MASK = 0xff38;
+
 export class GameBoyAdvanceVideo {
   cpu: ARMCore;
   core: GameBoyAdvance;
@@ -42,7 +44,6 @@ export class GameBoyAdvanceVideo {
   drawCallback: () => void;
   vblankCallback: () => void;
 
-  DISPSTAT_MASK: number;
   inHblank: boolean;
   inVblank: boolean;
   vcounter: number | boolean;
@@ -76,7 +77,6 @@ export class GameBoyAdvanceVideo {
     this.drawCallback = () => {};
     this.vblankCallback = () => {};
 
-    this.DISPSTAT_MASK = 0;
     this.inHblank = false;
     this.inVblank = false;
     this.vcounter = 0;
@@ -99,7 +99,6 @@ export class GameBoyAdvanceVideo {
     this.renderPath.clear(this.cpu.mmu);
 
     // DISPSTAT
-    this.DISPSTAT_MASK = 0xff38;
     this.inHblank = false;
     this.inVblank = false;
     this.vcounter = 0;

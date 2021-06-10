@@ -1,10 +1,9 @@
-# WebGBA
+# wgba
 
 Play GBA game on your Web browser!
 
 ## Todos
 
-- Improve BIOS high level emulation accuracy
 - Fix sound ch1 & ch2 bug
 - Responsive
 - PWA

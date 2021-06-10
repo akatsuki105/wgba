@@ -5,7 +5,7 @@ import { GameBoyAdvanceKeypad } from './keypad';
 import { size } from './mmu';
 import { GameBoyAdvanceSIO } from './sio';
 import { Serializer } from './util';
-import { GameBoyAdvanceVideo } from './video';
+import { DISPSTAT_MASK, GameBoyAdvanceVideo } from './video';
 
 export type FrostIO = {
   registers: any;
@@ -505,7 +505,7 @@ export class GameBoyAdvanceIO {
         break;
       }
       case ioAddr.DISPSTAT: {
-        value &= this.video?.DISPSTAT_MASK || 0;
+        value &= DISPSTAT_MASK || 0;
         this.video?.writeDisplayStat(value);
         break;
       }
