@@ -796,12 +796,12 @@ const TARGET1_MASK = 0x10;
 const TARGET2_MASK = 0x08;
 const OBJWIN_MASK = 0x20;
 const WRITTEN_MASK = 0x80;
+const PRIORITY_MASK = LAYER_MASK | BACKGROUND_MASK;
 
 const HORIZONTAL_PIXELS = 240;
 const VERTICAL_PIXELS = 160;
 
 export class GameBoyAdvanceSoftwareRenderer {
-  PRIORITY_MASK: number;
   drawBackdrop: Backdrop;
 
   palette?: GameBoyAdvancePalette;
@@ -869,8 +869,6 @@ export class GameBoyAdvanceSoftwareRenderer {
   static multipalette: any;
 
   constructor() {
-    this.PRIORITY_MASK = LAYER_MASK | BACKGROUND_MASK;
-
     this.drawBackdrop = new Backdrop(this);
 
     this.backgroundMode = 0;
@@ -1443,9 +1441,9 @@ export class GameBoyAdvanceSoftwareRenderer {
       video.setBlendEnabled(layer, !!blend, blend);
     }
 
-    let highPriority = (mask & video.PRIORITY_MASK) < (oldStencil & video.PRIORITY_MASK);
+    let highPriority = (mask & PRIORITY_MASK) < (oldStencil & PRIORITY_MASK);
     // Backgrounds can draw over each other, too.
-    if ((mask & video.PRIORITY_MASK) == (oldStencil & video.PRIORITY_MASK)) {
+    if ((mask & PRIORITY_MASK) == (oldStencil & PRIORITY_MASK)) {
       highPriority = !!(mask & BACKGROUND_MASK);
     }
 
@@ -1459,7 +1457,7 @@ export class GameBoyAdvanceSoftwareRenderer {
       }
       // We just drew over something, so it doesn't make sense for us to be a TARGET1 anymore...
       stencil |= mask & ~TARGET1_MASK;
-    } else if ((mask & video.PRIORITY_MASK) > (oldStencil & video.PRIORITY_MASK)) {
+    } else if ((mask & PRIORITY_MASK) > (oldStencil & PRIORITY_MASK)) {
       // We're below another layer, but might be the blend target for it
       stencil = oldStencil & ~(TARGET1_MASK | TARGET2_MASK);
       if (mask & TARGET2_MASK && oldStencil & TARGET1_MASK) {
