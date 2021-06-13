@@ -789,13 +789,14 @@ type SharedMap = {
 
 const LAYER_OBJ = 4;
 const LAYER_BACKDROP = 5;
+const LAYER_MASK = 6;
+
+const BACKGROUND_MASK = 0x01;
 
 const HORIZONTAL_PIXELS = 240;
 const VERTICAL_PIXELS = 160;
 
 export class GameBoyAdvanceSoftwareRenderer {
-  LAYER_MASK: number;
-  BACKGROUND_MASK: number;
   TARGET2_MASK: number;
   TARGET1_MASK: number;
   OBJWIN_MASK: number;
@@ -869,14 +870,12 @@ export class GameBoyAdvanceSoftwareRenderer {
   static multipalette: any;
 
   constructor() {
-    this.LAYER_MASK = 0x06;
-    this.BACKGROUND_MASK = 0x01;
     this.TARGET2_MASK = 0x08;
     this.TARGET1_MASK = 0x10;
     this.OBJWIN_MASK = 0x20;
     this.WRITTEN_MASK = 0x80;
 
-    this.PRIORITY_MASK = this.LAYER_MASK | this.BACKGROUND_MASK;
+    this.PRIORITY_MASK = LAYER_MASK | BACKGROUND_MASK;
 
     this.drawBackdrop = new Backdrop(this);
 
@@ -1453,7 +1452,7 @@ export class GameBoyAdvanceSoftwareRenderer {
     let highPriority = (mask & video.PRIORITY_MASK) < (oldStencil & video.PRIORITY_MASK);
     // Backgrounds can draw over each other, too.
     if ((mask & video.PRIORITY_MASK) == (oldStencil & video.PRIORITY_MASK)) {
-      highPriority = !!(mask & video.BACKGROUND_MASK);
+      highPriority = !!(mask & BACKGROUND_MASK);
     }
 
     if (!(oldStencil & video.WRITTEN_MASK)) {
@@ -1522,7 +1521,7 @@ export class GameBoyAdvanceSoftwareRenderer {
     const map = video?.sharedMap;
     const paletteShift = bg.multipalette ? 1 : 0;
 
-    let mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+    let mask = video.target2[index] | (bg.priority << 1) | BACKGROUND_MASK;
     if (video.blendMode == 1 && video.alphaEnabled) {
       mask |= video.target1[index];
     }
@@ -1596,7 +1595,7 @@ export class GameBoyAdvanceSoftwareRenderer {
     const map = video.sharedMap;
     let color;
 
-    let mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+    let mask = video.target2[index] | (bg.priority << 1) | BACKGROUND_MASK;
     if (video.blendMode == 1 && video.alphaEnabled) {
       mask |= video.target1[index];
     }
@@ -1644,7 +1643,7 @@ export class GameBoyAdvanceSoftwareRenderer {
     const map = video.sharedMap;
     let color;
 
-    let mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+    let mask = video.target2[index] | (bg.priority << 1) | BACKGROUND_MASK;
     if (video.blendMode == 1 && video.alphaEnabled) {
       mask |= video.target1[index];
     }
@@ -1679,7 +1678,7 @@ export class GameBoyAdvanceSoftwareRenderer {
     const map = video.sharedMap;
     let color;
 
-    let mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+    let mask = video.target2[index] | (bg.priority << 1) | BACKGROUND_MASK;
     if (video.blendMode == 1 && video.alphaEnabled) {
       mask |= video.target1[index];
     }
@@ -1713,7 +1712,7 @@ export class GameBoyAdvanceSoftwareRenderer {
     const index = bg.index;
     const map = video.sharedMap;
     let color;
-    let mask = video.target2[index] | (bg.priority << 1) | video.BACKGROUND_MASK;
+    let mask = video.target2[index] | (bg.priority << 1) | BACKGROUND_MASK;
     if (video.blendMode == 1 && video.alphaEnabled) {
       mask |= video.target1[index];
     }
