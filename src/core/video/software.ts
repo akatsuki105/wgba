@@ -721,8 +721,8 @@ class GameBoyAdvanceOBJLayer {
     for (let i = 0; i < objs.length; ++i) {
       obj = objs[i];
       if (obj.disable) continue;
-      if ((obj.mode & this.video.OBJWIN_MASK) != this.objwin) continue;
-      if (!(obj.mode & this.video.OBJWIN_MASK) && this.priority != obj.priority) continue;
+      if ((obj.mode & OBJWIN_MASK) != this.objwin) continue;
+      if (!(obj.mode & OBJWIN_MASK) && this.priority != obj.priority) continue;
       if (obj.y < VERTICAL_PIXELS) {
         wrappedY = obj.y;
       } else {
@@ -794,12 +794,12 @@ const LAYER_MASK = 6;
 const BACKGROUND_MASK = 0x01;
 const TARGET1_MASK = 0x10;
 const TARGET2_MASK = 0x08;
+const OBJWIN_MASK = 0x20;
 
 const HORIZONTAL_PIXELS = 240;
 const VERTICAL_PIXELS = 160;
 
 export class GameBoyAdvanceSoftwareRenderer {
-  OBJWIN_MASK: number;
   WRITTEN_MASK: number;
 
   PRIORITY_MASK: number;
@@ -870,7 +870,6 @@ export class GameBoyAdvanceSoftwareRenderer {
   static multipalette: any;
 
   constructor() {
-    this.OBJWIN_MASK = 0x20;
     this.WRITTEN_MASK = 0x80;
 
     this.PRIORITY_MASK = LAYER_MASK | BACKGROUND_MASK;
@@ -945,7 +944,7 @@ export class GameBoyAdvanceSoftwareRenderer {
       new GameBoyAdvanceOBJLayer(this, 3),
     ];
     this.objwinLayer = new GameBoyAdvanceOBJLayer(this, 4);
-    this.objwinLayer.objwin = this.OBJWIN_MASK;
+    this.objwinLayer.objwin = OBJWIN_MASK;
 
     // DISPCNT
     this.backgroundMode = 0;
@@ -1421,11 +1420,11 @@ export class GameBoyAdvanceSoftwareRenderer {
     const oldStencil = backing.stencil[offset];
     const blend = video.blendMode;
     if (video.objwinActive) {
-      if (oldStencil & video.OBJWIN_MASK) {
+      if (oldStencil & OBJWIN_MASK) {
         if (video.windows[3].enabled[layer]) {
           video.setBlendEnabled(layer, !!video.windows[3].special && !!video.target1[layer], blend);
           if (video.windows[3].special && video.alphaEnabled) mask |= video.target1[layer];
-          stencil |= video.OBJWIN_MASK;
+          stencil |= OBJWIN_MASK;
         } else {
           return;
         }
@@ -1475,9 +1474,9 @@ export class GameBoyAdvanceSoftwareRenderer {
       return;
     }
 
-    if (mask & video.OBJWIN_MASK) {
+    if (mask & OBJWIN_MASK) {
       // We ARE the object window, don't draw pixels!
-      backing.stencil[offset] |= video.OBJWIN_MASK;
+      backing.stencil[offset] |= OBJWIN_MASK;
 
       return;
     }
