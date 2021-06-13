@@ -479,7 +479,7 @@ class GameBoyAdvanceOBJ {
     }
 
     let totalWidth = this.cachedWidth;
-    if (this.x < video.HORIZONTAL_PIXELS) {
+    if (this.x < HORIZONTAL_PIXELS) {
       if (this.x < start) {
         underflow = start - this.x;
         offset = start;
@@ -585,11 +585,11 @@ class GameBoyAdvanceOBJ {
     let totalWidth = this.cachedWidth << Number(this.doublesize);
     const totalHeight = this.cachedHeight << Number(this.doublesize);
     let drawWidth = totalWidth;
-    if (drawWidth > video.HORIZONTAL_PIXELS) {
-      totalWidth = video.HORIZONTAL_PIXELS;
+    if (drawWidth > HORIZONTAL_PIXELS) {
+      totalWidth = HORIZONTAL_PIXELS;
     }
 
-    if (this.x < video.HORIZONTAL_PIXELS) {
+    if (this.x < HORIZONTAL_PIXELS) {
       if (this.x < start) {
         underflow = start - this.x;
         offset = start;
@@ -743,7 +743,7 @@ class GameBoyAdvanceOBJLayer {
       if (obj.disable) continue;
       if ((obj.mode & this.video.OBJWIN_MASK) != this.objwin) continue;
       if (!(obj.mode & this.video.OBJWIN_MASK) && this.priority != obj.priority) continue;
-      if (obj.y < this.video.VERTICAL_PIXELS) {
+      if (obj.y < VERTICAL_PIXELS) {
         wrappedY = obj.y;
       } else {
         wrappedY = obj.y - 256;
@@ -807,12 +807,12 @@ type SharedMap = {
   palette: number;
 };
 
+const HORIZONTAL_PIXELS = 240;
+const VERTICAL_PIXELS = 160;
+
 export class GameBoyAdvanceSoftwareRenderer {
   LAYER_OBJ: number;
   LAYER_BACKDROP: number;
-
-  HORIZONTAL_PIXELS: number;
-  VERTICAL_PIXELS: number;
 
   LAYER_MASK: number;
   BACKGROUND_MASK: number;
@@ -891,10 +891,6 @@ export class GameBoyAdvanceSoftwareRenderer {
   constructor() {
     this.LAYER_OBJ = 4;
     this.LAYER_BACKDROP = 5;
-
-    this.HORIZONTAL_PIXELS = 240;
-    this.VERTICAL_PIXELS = 160;
-
     this.LAYER_MASK = 0x06;
     this.BACKGROUND_MASK = 0x01;
     this.TARGET2_MASK = 0x08;
@@ -1096,7 +1092,7 @@ export class GameBoyAdvanceSoftwareRenderer {
     this.alphaEnabled = false;
 
     this.scanline = {
-      color: new Uint16Array(this.HORIZONTAL_PIXELS),
+      color: new Uint16Array(HORIZONTAL_PIXELS),
       // Stencil format:
       // Bits 0-1: Layer
       // Bit 2: Is background
@@ -1105,7 +1101,7 @@ export class GameBoyAdvanceSoftwareRenderer {
       // Bit 5: Is OBJ Window
       // Bit 6: Reserved
       // Bit 7: Has been written
-      stencil: new Uint8Array(this.HORIZONTAL_PIXELS),
+      stencil: new Uint8Array(HORIZONTAL_PIXELS),
     };
     this.sharedColor = [0, 0, 0];
     this.sharedMap = {
@@ -1143,7 +1139,7 @@ export class GameBoyAdvanceSoftwareRenderer {
     this.pixelData = backing;
 
     // Clear backing first
-    for (let offset = 0; offset < this.HORIZONTAL_PIXELS * this.VERTICAL_PIXELS * 4; ) {
+    for (let offset = 0; offset < HORIZONTAL_PIXELS * VERTICAL_PIXELS * 4; ) {
       this.pixelData.data[offset++] = 0xff;
       this.pixelData.data[offset++] = 0xff;
       this.pixelData.data[offset++] = 0xff;
@@ -1235,33 +1231,33 @@ export class GameBoyAdvanceSoftwareRenderer {
 
   writeWin0H(value: number) {
     this.win0Left = (value & 0xff00) >> 8;
-    this.win0Right = Math.min(this.HORIZONTAL_PIXELS, value & 0x00ff);
+    this.win0Right = Math.min(HORIZONTAL_PIXELS, value & 0x00ff);
     if (this.win0Left > this.win0Right) {
-      this.win0Right = this.HORIZONTAL_PIXELS;
+      this.win0Right = HORIZONTAL_PIXELS;
     }
   }
 
   writeWin1H(value: number) {
     this.win1Left = (value & 0xff00) >> 8;
-    this.win1Right = Math.min(this.HORIZONTAL_PIXELS, value & 0x00ff);
+    this.win1Right = Math.min(HORIZONTAL_PIXELS, value & 0x00ff);
     if (this.win1Left > this.win1Right) {
-      this.win1Right = this.HORIZONTAL_PIXELS;
+      this.win1Right = HORIZONTAL_PIXELS;
     }
   }
 
   writeWin0V(value: number) {
     this.win0Top = (value & 0xff00) >> 8;
-    this.win0Bottom = Math.min(this.VERTICAL_PIXELS, value & 0x00ff);
+    this.win0Bottom = Math.min(VERTICAL_PIXELS, value & 0x00ff);
     if (this.win0Top > this.win0Bottom) {
-      this.win0Bottom = this.VERTICAL_PIXELS;
+      this.win0Bottom = VERTICAL_PIXELS;
     }
   }
 
   writeWin1V(value: number) {
     this.win1Top = (value & 0xff00) >> 8;
-    this.win1Bottom = Math.min(this.VERTICAL_PIXELS, value & 0x00ff);
+    this.win1Bottom = Math.min(VERTICAL_PIXELS, value & 0x00ff);
     if (this.win1Top > this.win1Bottom) {
-      this.win1Bottom = this.VERTICAL_PIXELS;
+      this.win1Bottom = VERTICAL_PIXELS;
     }
   }
 
@@ -1515,14 +1511,14 @@ export class GameBoyAdvanceSoftwareRenderer {
   }
 
   drawScanlineBlank(backing: Backing) {
-    for (let x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
+    for (let x = 0; x < HORIZONTAL_PIXELS; ++x) {
       backing.color[x] = 0xffff;
       backing.stencil[x] = 0;
     }
   }
 
   prepareScanline(backing: Backing) {
-    for (let x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
+    for (let x = 0; x < HORIZONTAL_PIXELS; ++x) {
       backing.stencil[x] = this.target2[this.LAYER_BACKDROP];
     }
   }
@@ -1682,16 +1678,11 @@ export class GameBoyAdvanceSoftwareRenderer {
         localX -= (x % video.bgMosaicX) * bg.dx + (y % video.bgMosaicY) * bg.dmx;
         localY -= (x % video.bgMosaicX) * bg.dy + (y % video.bgMosaicY) * bg.dmy;
       }
-      if (
-        localX < 0 ||
-        localY < 0 ||
-        localX >= video.HORIZONTAL_PIXELS ||
-        localY >= video.VERTICAL_PIXELS
-      ) {
+      if (localX < 0 || localY < 0 || localX >= HORIZONTAL_PIXELS || localY >= VERTICAL_PIXELS) {
         offset++;
         continue;
       }
-      color = this.vram?.loadU16((localY * video.HORIZONTAL_PIXELS + localX) << 1);
+      color = this.vram?.loadU16((localY * HORIZONTAL_PIXELS + localX) << 1);
       bg.pushPixel(index, map, video, color, 0, offset, backing, mask, true);
       offset++;
     }
@@ -1722,16 +1713,11 @@ export class GameBoyAdvanceSoftwareRenderer {
         localX -= (x % video.bgMosaicX) * bg.dx + (y % video.bgMosaicY) * bg.dmx;
         localY -= (x % video.bgMosaicX) * bg.dy + (y % video.bgMosaicY) * bg.dmy;
       }
-      if (
-        localX < 0 ||
-        localY < 0 ||
-        localX >= video.HORIZONTAL_PIXELS ||
-        localY >= video.VERTICAL_PIXELS
-      ) {
+      if (localX < 0 || localY < 0 || localX >= HORIZONTAL_PIXELS || localY >= VERTICAL_PIXELS) {
         offset++;
         continue;
       }
-      color = this.vram?.loadU8(charBase + localY * video.HORIZONTAL_PIXELS + localX);
+      color = this.vram?.loadU8(charBase + localY * HORIZONTAL_PIXELS + localX);
       bg.pushPixel(index, map, video, color, 0, offset, backing, mask, false);
       offset++;
     }
@@ -1793,12 +1779,12 @@ export class GameBoyAdvanceSoftwareRenderer {
       this.objwinActive = false;
       if (!(this.win0 || this.win1 || this.objwin)) {
         this.setBlendEnabled(layer.index, !!this.target1[layer.index], this.blendMode);
-        layer.drawScanline(backing, layer, 0, this.HORIZONTAL_PIXELS);
+        layer.drawScanline(backing, layer, 0, HORIZONTAL_PIXELS);
       } else {
         firstStart = 0;
-        firstEnd = this.HORIZONTAL_PIXELS;
+        firstEnd = HORIZONTAL_PIXELS;
         lastStart = 0;
-        lastEnd = this.HORIZONTAL_PIXELS;
+        lastEnd = HORIZONTAL_PIXELS;
         if (this.win0 && y >= this.win0Top && y < this.win0Bottom) {
           if (this.windows[0].enabled[layer.index]) {
             this.setBlendEnabled(
@@ -1849,13 +1835,13 @@ export class GameBoyAdvanceSoftwareRenderer {
             this.blendMode,
           ); // Window 3 handled in pushPixel
           if (firstEnd > lastStart) {
-            layer.drawScanline(backing, layer, 0, this.HORIZONTAL_PIXELS);
+            layer.drawScanline(backing, layer, 0, HORIZONTAL_PIXELS);
           } else {
             if (firstEnd) {
               layer.drawScanline(backing, layer, 0, firstEnd);
             }
-            if (lastStart < this.HORIZONTAL_PIXELS) {
-              layer.drawScanline(backing, layer, lastStart, this.HORIZONTAL_PIXELS);
+            if (lastStart < HORIZONTAL_PIXELS) {
+              layer.drawScanline(backing, layer, lastStart, HORIZONTAL_PIXELS);
             }
             if (lastEnd < firstStart) {
               layer.drawScanline(backing, layer, lastEnd, firstStart);
@@ -1881,9 +1867,9 @@ export class GameBoyAdvanceSoftwareRenderer {
   finishScanline(backing: Backing) {
     let color = 0;
     const bd = this.palette?.accessColor(this.LAYER_BACKDROP, 0) || 0;
-    let xx = this.vcount * this.HORIZONTAL_PIXELS * 4;
+    let xx = this.vcount * HORIZONTAL_PIXELS * 4;
     const isTarget2 = this.target2[this.LAYER_BACKDROP];
-    for (let x = 0; x < this.HORIZONTAL_PIXELS; ++x) {
+    for (let x = 0; x < HORIZONTAL_PIXELS; ++x) {
       if (backing.stencil[x] & this.WRITTEN_MASK) {
         color = backing.color[x];
         if (isTarget2 && backing.stencil[x] & this.TARGET1_MASK) {
