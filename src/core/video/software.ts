@@ -756,7 +756,7 @@ class Backdrop {
     this.video = video;
     this.bg = true;
     this.priority = -1;
-    this.index = video.LAYER_BACKDROP;
+    this.index = LAYER_BACKDROP;
     this.enabled = true;
   }
 
@@ -788,13 +788,12 @@ type SharedMap = {
 };
 
 const LAYER_OBJ = 4;
+const LAYER_BACKDROP = 5;
 
 const HORIZONTAL_PIXELS = 240;
 const VERTICAL_PIXELS = 160;
 
 export class GameBoyAdvanceSoftwareRenderer {
-  LAYER_BACKDROP: number;
-
   LAYER_MASK: number;
   BACKGROUND_MASK: number;
   TARGET2_MASK: number;
@@ -870,7 +869,6 @@ export class GameBoyAdvanceSoftwareRenderer {
   static multipalette: any;
 
   constructor() {
-    this.LAYER_BACKDROP = 5;
     this.LAYER_MASK = 0x06;
     this.BACKGROUND_MASK = 0x01;
     this.TARGET2_MASK = 0x08;
@@ -1499,7 +1497,7 @@ export class GameBoyAdvanceSoftwareRenderer {
 
   prepareScanline(backing: Backing) {
     for (let x = 0; x < HORIZONTAL_PIXELS; ++x) {
-      backing.stencil[x] = this.target2[this.LAYER_BACKDROP];
+      backing.stencil[x] = this.target2[LAYER_BACKDROP];
     }
   }
 
@@ -1830,8 +1828,8 @@ export class GameBoyAdvanceSoftwareRenderer {
         }
 
         this.setBlendEnabled(
-          this.LAYER_BACKDROP,
-          !!(this.target1[this.LAYER_BACKDROP] && !!this.windows[2].special),
+          LAYER_BACKDROP,
+          !!(this.target1[LAYER_BACKDROP] && !!this.windows[2].special),
           this.blendMode,
         );
       }
@@ -1846,9 +1844,9 @@ export class GameBoyAdvanceSoftwareRenderer {
 
   finishScanline(backing: Backing) {
     let color = 0;
-    const bd = this.palette?.accessColor(this.LAYER_BACKDROP, 0) || 0;
+    const bd = this.palette?.accessColor(LAYER_BACKDROP, 0) || 0;
     let xx = this.vcount * HORIZONTAL_PIXELS * 4;
-    const isTarget2 = this.target2[this.LAYER_BACKDROP];
+    const isTarget2 = this.target2[LAYER_BACKDROP];
     for (let x = 0; x < HORIZONTAL_PIXELS; ++x) {
       if (backing.stencil[x] & this.WRITTEN_MASK) {
         color = backing.color[x];
