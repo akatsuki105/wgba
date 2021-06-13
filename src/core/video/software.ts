@@ -792,12 +792,12 @@ const LAYER_BACKDROP = 5;
 const LAYER_MASK = 6;
 
 const BACKGROUND_MASK = 0x01;
+const TARGET2_MASK = 0x08;
 
 const HORIZONTAL_PIXELS = 240;
 const VERTICAL_PIXELS = 160;
 
 export class GameBoyAdvanceSoftwareRenderer {
-  TARGET2_MASK: number;
   TARGET1_MASK: number;
   OBJWIN_MASK: number;
   WRITTEN_MASK: number;
@@ -870,7 +870,6 @@ export class GameBoyAdvanceSoftwareRenderer {
   static multipalette: any;
 
   constructor() {
-    this.TARGET2_MASK = 0x08;
     this.TARGET1_MASK = 0x10;
     this.OBJWIN_MASK = 0x20;
     this.WRITTEN_MASK = 0x80;
@@ -1265,12 +1264,12 @@ export class GameBoyAdvanceSoftwareRenderer {
     this.target1[3] = Number(!!(value & 0x0008)) * this.TARGET1_MASK;
     this.target1[4] = Number(!!(value & 0x0010)) * this.TARGET1_MASK;
     this.target1[5] = Number(!!(value & 0x0020)) * this.TARGET1_MASK;
-    this.target2[0] = Number(!!(value & 0x0100)) * this.TARGET2_MASK;
-    this.target2[1] = Number(!!(value & 0x0200)) * this.TARGET2_MASK;
-    this.target2[2] = Number(!!(value & 0x0400)) * this.TARGET2_MASK;
-    this.target2[3] = Number(!!(value & 0x0800)) * this.TARGET2_MASK;
-    this.target2[4] = Number(!!(value & 0x1000)) * this.TARGET2_MASK;
-    this.target2[5] = Number(!!(value & 0x2000)) * this.TARGET2_MASK;
+    this.target2[0] = Number(!!(value & 0x0100)) * TARGET2_MASK;
+    this.target2[1] = Number(!!(value & 0x0200)) * TARGET2_MASK;
+    this.target2[2] = Number(!!(value & 0x0400)) * TARGET2_MASK;
+    this.target2[3] = Number(!!(value & 0x0800)) * TARGET2_MASK;
+    this.target2[4] = Number(!!(value & 0x1000)) * TARGET2_MASK;
+    this.target2[5] = Number(!!(value & 0x2000)) * TARGET2_MASK;
     this.blendMode = (value & 0x00c0) >> 6;
 
     switch (this.blendMode) {
@@ -1439,7 +1438,7 @@ export class GameBoyAdvanceSoftwareRenderer {
       }
     }
 
-    if (mask & video.TARGET1_MASK && oldStencil & video.TARGET2_MASK) {
+    if (mask & video.TARGET1_MASK && oldStencil & TARGET2_MASK) {
       video.setBlendEnabled(layer, true, 1);
     }
 
@@ -1460,15 +1459,15 @@ export class GameBoyAdvanceSoftwareRenderer {
       stencil |= mask;
     } else if (highPriority) {
       // We are higher priority
-      if (mask & video.TARGET1_MASK && oldStencil & video.TARGET2_MASK) {
+      if (mask & video.TARGET1_MASK && oldStencil & TARGET2_MASK) {
         pixel = video.palette?.mix(video.blendA, pixel, video.blendB, backing.color[offset]) || 0;
       }
       // We just drew over something, so it doesn't make sense for us to be a TARGET1 anymore...
       stencil |= mask & ~video.TARGET1_MASK;
     } else if ((mask & video.PRIORITY_MASK) > (oldStencil & video.PRIORITY_MASK)) {
       // We're below another layer, but might be the blend target for it
-      stencil = oldStencil & ~(video.TARGET1_MASK | video.TARGET2_MASK);
-      if (mask & video.TARGET2_MASK && oldStencil & video.TARGET1_MASK) {
+      stencil = oldStencil & ~(video.TARGET1_MASK | TARGET2_MASK);
+      if (mask & TARGET2_MASK && oldStencil & video.TARGET1_MASK) {
         pixel = video.palette?.mix(video.blendB, pixel, video.blendA, backing.color[offset]) || 0;
       } else {
         return;
