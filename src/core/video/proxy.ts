@@ -4,6 +4,9 @@ import { resolveOAMMirror, resolvePaletteMirror, resolveVRAMMirror } from 'src/u
 
 const worker = './worker';
 
+/**
+ * For performance, use GameBoyAdvanceSoftwareRenderer in worker thread and operate it through this proxy in main thread.
+ */
 export class MemoryProxy {
   owner: any;
   blocks: MemoryView[];
