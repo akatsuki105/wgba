@@ -74,7 +74,7 @@ class GameBoyAdvanceOAM extends MemoryAligned16 {
     d: number;
   }[];
 
-  video: any;
+  video: GameBoyAdvanceSoftwareRenderer | null;
 
   constructor(size: number) {
     super(size);
@@ -94,6 +94,7 @@ class GameBoyAdvanceOAM extends MemoryAligned16 {
         d: 1,
       };
     }
+    this.video = null;
   }
 
   overwrite(memory: Uint16Array) {
@@ -467,6 +468,8 @@ class GameBoyAdvanceOBJ {
 
   drawScanlineNormal(backing: Backing, y: number, yOff: number, start: number, end: number) {
     const video = this.oam.video;
+    if (!video) return;
+
     let x = 0;
     let underflow;
     let offset;
@@ -559,6 +562,8 @@ class GameBoyAdvanceOBJ {
 
   drawScanlineAffine(backing: Backing, y: number, yOff: number, start: number, end: number) {
     const video = this.oam.video;
+    if (!video) return;
+
     let x;
     let underflow;
     let offset;
