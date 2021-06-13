@@ -815,6 +815,8 @@ const PRIORITY_MASK = LAYER_MASK | BACKGROUND_MASK;
 const HORIZONTAL_PIXELS = 240;
 const VERTICAL_PIXELS = 160;
 
+const HDRAW_LENGTH = 0;
+
 /**
  * graphic root class
  */
@@ -866,7 +868,6 @@ export class GameBoyAdvanceSoftwareRenderer {
   nextVblankIRQ: number;
   nextVcounterIRQ: number;
   bg: any[];
-  HDRAW_LENGTH: number;
   bgModes: any[];
   drawLayers: any[];
   objwinActive: boolean;
@@ -923,7 +924,6 @@ export class GameBoyAdvanceSoftwareRenderer {
     this.nextVblankIRQ = 0;
     this.nextVcounterIRQ = 0;
     this.bg = [];
-    this.HDRAW_LENGTH = 0;
     this.bgModes = [];
     this.drawLayers = [];
     this.objwinActive = false;
@@ -1015,7 +1015,7 @@ export class GameBoyAdvanceSoftwareRenderer {
     this.objMosaicY = 1;
 
     this.lastHblank = 0;
-    this.nextHblank = this.HDRAW_LENGTH;
+    this.nextHblank = HDRAW_LENGTH;
     this.nextEvent = this.nextHblank;
 
     this.nextHblankIRQ = 0;
@@ -1763,9 +1763,11 @@ export class GameBoyAdvanceSoftwareRenderer {
 
       this.objwinActive = false;
       if (!(this.win0 || this.win1 || this.objwin)) {
+        // no window
         this.setBlendEnabled(layer.index, !!this.target1[layer.index], this.blendMode);
         layer.drawScanline(backing, layer, 0, HORIZONTAL_PIXELS);
       } else {
+        // use window
         let firstStart = 0;
         let firstEnd = HORIZONTAL_PIXELS;
 
