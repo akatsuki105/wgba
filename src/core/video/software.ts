@@ -64,6 +64,9 @@ export class GameBoyAdvanceVRAM extends MemoryAligned16 {
   }
 }
 
+/**
+ * represents OAM contains 128 OBJs
+ */
 export class GameBoyAdvanceOAM extends MemoryAligned16 {
   oam: Uint16Array;
   objs: GameBoyAdvanceOBJ[];
@@ -401,6 +404,9 @@ type Backing = {
 
 const TILE_OFFSET = 0x10000;
 
+/**
+ * represents each obj contained in GameBoyAdvanceOAM
+ */
 class GameBoyAdvanceOBJ {
   oam: GameBoyAdvanceOAM;
 
@@ -698,6 +704,9 @@ class GameBoyAdvanceOBJ {
   }
 }
 
+/**
+ * overall structure: GameBoyAdvanceOBJLayer > GameBoyAdvanceOAM > GameBoyAdvanceOBJ
+ */
 class GameBoyAdvanceOBJLayer {
   video: GameBoyAdvanceSoftwareRenderer;
   bg: boolean;
@@ -806,6 +815,9 @@ const PRIORITY_MASK = LAYER_MASK | BACKGROUND_MASK;
 const HORIZONTAL_PIXELS = 240;
 const VERTICAL_PIXELS = 160;
 
+/**
+ * graphic root class
+ */
 export class GameBoyAdvanceSoftwareRenderer {
   drawBackdrop: Backdrop;
 
@@ -1740,25 +1752,26 @@ export class GameBoyAdvanceSoftwareRenderer {
     }
 
     this.prepareScanline(backing);
-    let layer;
-    let firstStart, firstEnd;
-    let lastStart, lastEnd;
     this.vcount = y;
+
     // Draw lower priority first and then draw over them
     for (let i = 0; i < this.drawLayers.length; ++i) {
-      layer = this.drawLayers[i];
+      const layer = this.drawLayers[i];
       if (!layer.enabled) {
         continue;
       }
+
       this.objwinActive = false;
       if (!(this.win0 || this.win1 || this.objwin)) {
         this.setBlendEnabled(layer.index, !!this.target1[layer.index], this.blendMode);
         layer.drawScanline(backing, layer, 0, HORIZONTAL_PIXELS);
       } else {
-        firstStart = 0;
-        firstEnd = HORIZONTAL_PIXELS;
-        lastStart = 0;
-        lastEnd = HORIZONTAL_PIXELS;
+        let firstStart = 0;
+        let firstEnd = HORIZONTAL_PIXELS;
+
+        let lastStart = 0;
+        let lastEnd = HORIZONTAL_PIXELS;
+
         if (this.win0 && y >= this.win0Top && y < this.win0Bottom) {
           if (this.windows[0].enabled[layer.index]) {
             this.setBlendEnabled(
@@ -1773,6 +1786,7 @@ export class GameBoyAdvanceSoftwareRenderer {
           lastStart = Math.max(lastStart, this.win0Right);
           lastEnd = Math.min(lastEnd, this.win0Right);
         }
+
         if (this.win1 && y >= this.win1Top && y < this.win1Bottom) {
           if (this.windows[1].enabled[layer.index]) {
             this.setBlendEnabled(
@@ -1796,6 +1810,7 @@ export class GameBoyAdvanceSoftwareRenderer {
           lastStart = Math.max(lastStart, this.win1Right);
           lastEnd = Math.min(lastEnd, this.win1Right);
         }
+
         // Do last two
         if (
           this.windows[2].enabled[layer.index] ||
@@ -1829,6 +1844,7 @@ export class GameBoyAdvanceSoftwareRenderer {
           this.blendMode,
         );
       }
+
       if (layer.bg) {
         layer.sx += layer.dmx;
         layer.sy += layer.dmy;
