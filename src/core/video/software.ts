@@ -398,8 +398,9 @@ type Backing = {
   stencil: Uint8Array;
 };
 
+const TILE_OFFSET = 0x10000;
+
 class GameBoyAdvanceOBJ {
-  TILE_OFFSET: number;
   oam: GameBoyAdvanceOAM;
 
   index: number;
@@ -432,7 +433,6 @@ class GameBoyAdvanceOBJ {
   size: number;
 
   constructor(oam: GameBoyAdvanceOAM, index: number) {
-    this.TILE_OFFSET = 0x10000;
     this.oam = oam;
 
     this.index = index;
@@ -525,7 +525,7 @@ class GameBoyAdvanceOBJ {
     localX = !this.hflip ? underflow : this.cachedWidth - underflow - 1;
 
     let tileRow = video.accessTile(
-      this.TILE_OFFSET + (x & 0x4) * paletteShift,
+      TILE_OFFSET + (x & 0x4) * paletteShift,
       this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01f8) >> (3 - paletteShift)),
       localYLo << paletteShift,
     );
@@ -538,7 +538,7 @@ class GameBoyAdvanceOBJ {
       if (!paletteShift) {
         if (!(x & 0x7) || (this.mosaic && !mosaicX)) {
           tileRow = video.accessTile(
-            this.TILE_OFFSET,
+            TILE_OFFSET,
             this.tileBase + tileOffset + (localX >> 3),
             localYLo,
           );
@@ -546,7 +546,7 @@ class GameBoyAdvanceOBJ {
       } else {
         if (!(x & 0x3) || (this.mosaic && !mosaicX)) {
           tileRow = video.accessTile(
-            this.TILE_OFFSET + (localX & 0x4),
+            TILE_OFFSET + (localX & 0x4),
             this.tileBase + (tileOffset << 1) + ((localX & 0x01f8) >> 2),
             localYLo << 1,
           );
@@ -624,7 +624,7 @@ class GameBoyAdvanceOBJ {
       }
 
       const tileRow = video.accessTile(
-        this.TILE_OFFSET + (localX & 0x4) * paletteShift,
+        TILE_OFFSET + (localX & 0x4) * paletteShift,
         this.tileBase + (tileOffset << paletteShift) + ((localX & 0x01f8) >> (3 - paletteShift)),
         (localY & 0x7) << paletteShift,
       );
