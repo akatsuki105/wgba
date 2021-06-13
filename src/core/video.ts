@@ -39,7 +39,7 @@ export class GameBoyAdvanceVideo {
   cpu: ARMCore;
   core: GameBoyAdvance;
 
-  renderPath: any;
+  renderPath: GameBoyAdvanceRenderProxy | GameBoyAdvanceSoftwareRenderer;
 
   drawCallback: () => void;
   vblankCallback: () => void;
@@ -207,7 +207,7 @@ export class GameBoyAdvanceVideo {
           this.nextVcounterIRQ += TOTAL_LENGTH;
         }
 
-        if (this.vcount < VERTICAL_PIXELS) this.renderPath.drawScanline(this.vcount);
+        if (this.vcount < VERTICAL_PIXELS) this.renderPath.drawScanline(this.vcount, null);
       } else {
         // Begin Hblank
         this.inHblank = true;

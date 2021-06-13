@@ -55,7 +55,7 @@ class MemoryAligned16 {
   }
 }
 
-class GameBoyAdvanceVRAM extends MemoryAligned16 {
+export class GameBoyAdvanceVRAM extends MemoryAligned16 {
   vram: Uint16Array;
 
   constructor(size: number) {
@@ -64,7 +64,7 @@ class GameBoyAdvanceVRAM extends MemoryAligned16 {
   }
 }
 
-class GameBoyAdvanceOAM extends MemoryAligned16 {
+export class GameBoyAdvanceOAM extends MemoryAligned16 {
   oam: Uint16Array;
   objs: GameBoyAdvanceOBJ[];
   scalerot: {
@@ -182,7 +182,7 @@ class GameBoyAdvanceOAM extends MemoryAligned16 {
   }
 }
 
-class GameBoyAdvancePalette {
+export class GameBoyAdvancePalette {
   colors: [number[], number[]];
   adjustedColors: [number[], number[]];
   passthroughColors: number[][];

@@ -6,6 +6,7 @@ import { DMA } from './irq';
 import { EEPROMSavedata, FlashSavedata, SRAMSavedata } from './savedata';
 import { Serializer } from './util';
 import { MemoryProxy } from './video/proxy';
+import { GameBoyAdvanceOAM, GameBoyAdvancePalette, GameBoyAdvanceVRAM } from './video/software';
 
 export class MemoryView {
   buffer: ArrayBufferLike;
@@ -396,7 +397,15 @@ export class GameBoyAdvanceMMU {
     this.waitstatesPrefetch32 = this.WAITSTATES_SEQ_32.slice(0);
   }
 
-  mmap(region: number, object: GameBoyAdvanceIO | MemoryProxy) {
+  mmap(
+    region: number,
+    object:
+      | GameBoyAdvanceIO
+      | MemoryProxy
+      | GameBoyAdvancePalette
+      | GameBoyAdvanceVRAM
+      | GameBoyAdvanceOAM,
+  ) {
     this.memory[region] = object;
   }
 

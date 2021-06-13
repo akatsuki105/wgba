@@ -245,55 +245,55 @@ export class GameBoyAdvanceRenderProxy {
     this.dirty.DISPCNT = value;
   }
 
-  writeBackgroundControl(bg: string, value: number) {
+  writeBackgroundControl(bg: number, value: number) {
     this.dirty = this.dirty || {};
     this.dirty.BGCNT = this.dirty.BGCNT || [];
     this.dirty.BGCNT[bg] = value;
   }
 
-  writeBackgroundHOffset(bg: string, value: number) {
+  writeBackgroundHOffset(bg: number, value: number) {
     this.dirty = this.dirty || {};
     this.dirty.BGHOFS = this.dirty.BGHOFS || [];
     this.dirty.BGHOFS[bg] = value;
   }
 
-  writeBackgroundVOffset(bg: string, value: number) {
+  writeBackgroundVOffset(bg: number, value: number) {
     this.dirty = this.dirty || {};
     this.dirty.BGVOFS = this.dirty.BGVOFS || [];
     this.dirty.BGVOFS[bg] = value;
   }
 
-  writeBackgroundRefX(bg: string, value: number) {
+  writeBackgroundRefX(bg: number, value: number) {
     this.dirty = this.dirty || {};
     this.dirty.BGX = this.dirty.BGX || [];
     this.dirty.BGX[bg] = value;
   }
 
-  writeBackgroundRefY(bg: string, value: number) {
+  writeBackgroundRefY(bg: number, value: number) {
     this.dirty = this.dirty || {};
     this.dirty.BGY = this.dirty.BGY || [];
     this.dirty.BGY[bg] = value;
   }
 
-  writeBackgroundParamA(bg: string, value: number) {
+  writeBackgroundParamA(bg: number, value: number) {
     this.dirty = this.dirty || {};
     this.dirty.BGPA = this.dirty.BGPA || [];
     this.dirty.BGPA[bg] = value;
   }
 
-  writeBackgroundParamB(bg: string, value: number) {
+  writeBackgroundParamB(bg: number, value: number) {
     this.dirty = this.dirty || {};
     this.dirty.BGPB = this.dirty.BGPB || [];
     this.dirty.BGPB[bg] = value;
   }
 
-  writeBackgroundParamC(bg: string, value: number) {
+  writeBackgroundParamC(bg: number, value: number) {
     this.dirty = this.dirty || {};
     this.dirty.BGPC = this.dirty.BGPC || [];
     this.dirty.BGPC[bg] = value;
   }
 
-  writeBackgroundParamD(bg: string, value: number) {
+  writeBackgroundParamD(bg: number, value: number) {
     this.dirty = this.dirty || {};
     this.dirty.BGPD = this.dirty.BGPD || [];
     this.dirty.BGPD[bg] = value;

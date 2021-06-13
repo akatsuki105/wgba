@@ -190,9 +190,9 @@ export class GameBoyAdvance {
     this.sio.clear();
 
     this.mmu.mmap(region.IO, this.io);
-    this.mmu.mmap(region.PALETTE_RAM, this.video.renderPath.palette);
-    this.mmu.mmap(region.VRAM, this.video.renderPath.vram);
-    this.mmu.mmap(region.OAM, this.video.renderPath.oam);
+    this.mmu.mmap(region.PALETTE_RAM, this.video.renderPath.palette!);
+    this.mmu.mmap(region.VRAM, this.video.renderPath.vram!);
+    this.mmu.mmap(region.OAM, this.video.renderPath.oam!);
 
     this.cpu.resetCPU(0);
   }
