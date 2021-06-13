@@ -808,10 +808,6 @@ type SharedMap = {
 };
 
 export class GameBoyAdvanceSoftwareRenderer {
-  LAYER_BG0: number;
-  LAYER_BG1: number;
-  LAYER_BG2: number;
-  LAYER_BG3: number;
   LAYER_OBJ: number;
   LAYER_BACKDROP: number;
 
@@ -893,10 +889,6 @@ export class GameBoyAdvanceSoftwareRenderer {
   static multipalette: any;
 
   constructor() {
-    this.LAYER_BG0 = 0;
-    this.LAYER_BG1 = 1;
-    this.LAYER_BG2 = 2;
-    this.LAYER_BG3 = 3;
     this.LAYER_OBJ = 4;
     this.LAYER_BACKDROP = 5;
 
