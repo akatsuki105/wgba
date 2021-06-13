@@ -763,9 +763,9 @@ class Backdrop {
   drawScanline(backing: Backing, layer: any, start: number, end: number) {
     // TODO: interactions with blend modes and OBJWIN
     for (let x = start; x < end; ++x) {
-      if (!(backing.stencil[x] & this.video.WRITTEN_MASK)) {
+      if (!(backing.stencil[x] & WRITTEN_MASK)) {
         backing.color[x] = this.video.palette?.accessColor(this.index, 0) || 0;
-        backing.stencil[x] = this.video.WRITTEN_MASK;
+        backing.stencil[x] = WRITTEN_MASK;
       } else if (backing.stencil[x] & TARGET1_MASK) {
         backing.color[x] =
           this.video.palette?.mix(
@@ -774,7 +774,7 @@ class Backdrop {
             this.video.blendA,
             backing.color[x],
           ) || 0;
-        backing.stencil[x] = this.video.WRITTEN_MASK;
+        backing.stencil[x] = WRITTEN_MASK;
       }
     }
   }
@@ -795,13 +795,12 @@ const BACKGROUND_MASK = 0x01;
 const TARGET1_MASK = 0x10;
 const TARGET2_MASK = 0x08;
 const OBJWIN_MASK = 0x20;
+const WRITTEN_MASK = 0x80;
 
 const HORIZONTAL_PIXELS = 240;
 const VERTICAL_PIXELS = 160;
 
 export class GameBoyAdvanceSoftwareRenderer {
-  WRITTEN_MASK: number;
-
   PRIORITY_MASK: number;
   drawBackdrop: Backdrop;
 
@@ -870,8 +869,6 @@ export class GameBoyAdvanceSoftwareRenderer {
   static multipalette: any;
 
   constructor() {
-    this.WRITTEN_MASK = 0x80;
-
     this.PRIORITY_MASK = LAYER_MASK | BACKGROUND_MASK;
 
     this.drawBackdrop = new Backdrop(this);
@@ -1416,7 +1413,7 @@ export class GameBoyAdvanceSoftwareRenderer {
       }
     }
 
-    let stencil = video.WRITTEN_MASK;
+    let stencil = WRITTEN_MASK;
     const oldStencil = backing.stencil[offset];
     const blend = video.blendMode;
     if (video.objwinActive) {
@@ -1452,7 +1449,7 @@ export class GameBoyAdvanceSoftwareRenderer {
       highPriority = !!(mask & BACKGROUND_MASK);
     }
 
-    if (!(oldStencil & video.WRITTEN_MASK)) {
+    if (!(oldStencil & WRITTEN_MASK)) {
       // Nothing here yet, just continue
       stencil |= mask;
     } else if (highPriority) {
@@ -1844,7 +1841,7 @@ export class GameBoyAdvanceSoftwareRenderer {
     let xx = this.vcount * HORIZONTAL_PIXELS * 4;
     const isTarget2 = this.target2[LAYER_BACKDROP];
     for (let x = 0; x < HORIZONTAL_PIXELS; ++x) {
-      if (backing.stencil[x] & this.WRITTEN_MASK) {
+      if (backing.stencil[x] & WRITTEN_MASK) {
         color = backing.color[x];
         if (isTarget2 && backing.stencil[x] & TARGET1_MASK) {
           color = this.palette?.mix(this.blendA, color, this.blendB, bd) || 0;
