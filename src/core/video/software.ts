@@ -470,12 +470,12 @@ class GameBoyAdvanceOBJ {
     let x = 0;
     let underflow;
     let offset;
-    let mask = this.mode | video.target2[video.LAYER_OBJ] | (this.priority << 1);
+    let mask = this.mode | video.target2[LAYER_OBJ] | (this.priority << 1);
     if (this.mode == 0x10) {
       mask |= video.TARGET1_MASK;
     }
     if (video.blendMode == 1 && video.alphaEnabled) {
-      mask |= video.target1[video.LAYER_OBJ];
+      mask |= video.target1[LAYER_OBJ];
     }
 
     let totalWidth = this.cachedWidth;
@@ -552,17 +552,7 @@ class GameBoyAdvanceOBJ {
           );
         }
       }
-      this.pushPixel(
-        video.LAYER_OBJ,
-        this,
-        video,
-        tileRow,
-        localX & 0x7,
-        offset,
-        backing,
-        mask,
-        false,
-      );
+      this.pushPixel(LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask, false);
       offset++;
     }
   }
@@ -573,9 +563,9 @@ class GameBoyAdvanceOBJ {
     let underflow;
     let offset;
 
-    let mask = this.mode | video.target2[video.LAYER_OBJ] | (this.priority << 1);
+    let mask = this.mode | video.target2[LAYER_OBJ] | (this.priority << 1);
     if (this.mode == 0x10) mask |= video.TARGET1_MASK;
-    if (video.blendMode == 1 && video.alphaEnabled) mask |= video.target1[video.LAYER_OBJ];
+    if (video.blendMode == 1 && video.alphaEnabled) mask |= video.target1[LAYER_OBJ];
 
     let localX, localY;
     const yDiff = y - yOff;
@@ -639,17 +629,7 @@ class GameBoyAdvanceOBJ {
         (localY & 0x7) << paletteShift,
       );
 
-      this.pushPixel(
-        video.LAYER_OBJ,
-        this,
-        video,
-        tileRow,
-        localX & 0x7,
-        offset,
-        backing,
-        mask,
-        false,
-      );
+      this.pushPixel(LAYER_OBJ, this, video, tileRow, localX & 0x7, offset, backing, mask, false);
       offset++;
     }
   }
@@ -724,7 +704,7 @@ class GameBoyAdvanceOBJLayer {
   constructor(video: GameBoyAdvanceSoftwareRenderer, index: number) {
     this.video = video;
     this.bg = false;
-    this.index = video.LAYER_OBJ;
+    this.index = LAYER_OBJ;
     this.priority = index;
     this.enabled = false;
     this.objwin = 0;
@@ -807,11 +787,12 @@ type SharedMap = {
   palette: number;
 };
 
+const LAYER_OBJ = 4;
+
 const HORIZONTAL_PIXELS = 240;
 const VERTICAL_PIXELS = 160;
 
 export class GameBoyAdvanceSoftwareRenderer {
-  LAYER_OBJ: number;
   LAYER_BACKDROP: number;
 
   LAYER_MASK: number;
@@ -889,7 +870,6 @@ export class GameBoyAdvanceSoftwareRenderer {
   static multipalette: any;
 
   constructor() {
-    this.LAYER_OBJ = 4;
     this.LAYER_BACKDROP = 5;
     this.LAYER_MASK = 0x06;
     this.BACKGROUND_MASK = 0x01;
