@@ -6,20 +6,19 @@ type Props = {
 };
 
 export const Frame: React.FC<Props> = React.memo(({ fps, children }) => {
-  const h = (window.innerHeight * 46) / 100;
-
   return (
-    <StyledDiv h={h}>
+    <StyledDiv>
       {fps ? <FPS>FPS: {fps}</FPS> : null}
       {children}
     </StyledDiv>
   );
 });
 
-const StyledDiv = styled.div<{ h: number }>`
+const StyledDiv = styled.div`
+  background-color: ${({ theme }) => theme.color.black};
+
   /* PC */
   @media (min-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
-    margin-top: 8%;
     margin-left: auto;
     margin-right: auto;
     width: 720px;
@@ -30,11 +29,11 @@ const StyledDiv = styled.div<{ h: number }>`
 
   /* mobile */
   @media (max-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
-    background-color: ${({ theme }) => theme.color.black};
-    width: 100vw;
-    height: ${(props) => props.h}px;
+    flex: 1.5;
+    width: 100%;
     display: flex;
     align-items: center;
+    justify-content: center;
   }
 `;
 
@@ -43,4 +42,13 @@ const FPS = styled.div`
   top: 4px;
   left: 4px;
   color: ${({ theme }) => theme.color.white};
+
+  /* PC */
+  @media (min-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
+    background-color: ${({ theme }) => theme.color.gray[600]};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+  }
 `;

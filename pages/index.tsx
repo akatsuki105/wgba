@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { styled } from 'twin.macro';
 import { Controller } from 'components/Controller';
 import { Frame } from 'components/Frame';
 import { Screen } from 'components/Screen';
@@ -108,7 +109,7 @@ const Index = () => {
   }, [gba, screenRef.current, initialized]); // eslint-disable-line
 
   return (
-    <div className="App">
+    <AppDiv>
       <Frame fps={fps}>
         <Screen ref={screenRef} />
       </Frame>
@@ -123,8 +124,24 @@ const Index = () => {
           toggleSound={toggleSound}
         />
       </JoystickProvider>
-    </div>
+    </AppDiv>
   );
 };
+
+const AppDiv = styled.div`
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  /* PC */
+  @media (min-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
+    width: 720px;
+  }
+
+  /* mobile */
+  @media (max-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
+    width: 100%;
+  }
+`;
 
 export default Index;

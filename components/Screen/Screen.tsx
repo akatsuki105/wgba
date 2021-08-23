@@ -7,15 +7,9 @@ export const Screen = React.forwardRef((_, ref: React.Ref<HTMLCanvasElement>) =>
 
 const StyledCanvas = styled.canvas`
   image-rendering: pixelated;
-
-  /* PC */
-  @media (min-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
-    transform: scale(3); /* fast due to GPU */
-    transform-origin: 50% 0%;
-  }
-
-  /* mobile */
-  @media (max-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
-    width: 100%;
-  }
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  max-width: ${(props) => `${props.theme.breakpoints.md}px`};
 `;

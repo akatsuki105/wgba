@@ -21,8 +21,6 @@ type Props = {
 
 export const Controller: React.FC<Props> = React.memo(
   ({ gba, mute, turnOn, turnOff, togglePause, toggleSound }) => {
-    const h = (window.innerHeight * 54) / 100;
-    const m = h - 380 > 0 ? h - 380 : 0;
     const ref = useRef<HTMLInputElement>(null);
 
     const [romHeaders, setROMHeaders] = useState<ROMHeader[]>([]);
@@ -73,7 +71,7 @@ export const Controller: React.FC<Props> = React.memo(
     }, [right]); // eslint-disable-line
 
     return (
-      <StyledDiv h={h}>
+      <StyledDiv>
         <StyledFlex>
           <LBtn
             onTouchStart={() => gba?.keypad.setGBAKey('L', 'keydown')}
@@ -115,7 +113,7 @@ export const Controller: React.FC<Props> = React.memo(
           </DpadContainer>
         </FlexBox>
 
-        <StyledFlexBox m={m}>
+        <StyledFlexBox>
           <div tw="w-1/12"></div>
           <MenuBtn onClick={openMenuModal}>Menu</MenuBtn>
           <div tw="w-1/12"></div>
@@ -147,22 +145,32 @@ export const Controller: React.FC<Props> = React.memo(
   },
 );
 
-const StyledDiv = styled.div<{ h: number }>`
+const StyledDiv = styled.div`
   user-select: none;
-  height: ${(props) => props.h}px;
   ${tw`bg-gradient-to-b from-purple-700 to-purple-900`}
+
+  /* PC */
+  @media (min-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
+    height: 100%;
+  }
+
+  /* mobile */
+  @media (max-width: ${({ theme }) => `${theme.breakpoints.lg}px`}) {
+    flex: 2;
+  }
 `;
 
 const StyledFlex = styled(FlexBox)`
+  width: 100%;
+  display: inline-flex;
   background-color: ${({ theme }) => theme.color.old.frame};
 `;
 
 const VolumeContainer = styled(FlexBox)`
-  height: 2%;
+  padding: 16px 0;
 `;
 
 const PauseBtn = styled(BaseButton)`
-  margin-top: 16%;
   width: 16px;
   height: 16px;
   border-radius: 50%;
@@ -171,16 +179,14 @@ const PauseBtn = styled(BaseButton)`
 
 const DpadContainer = styled(FlexBox)`
   ${tw`w-6/12`}
-  height: 78%;
-  padding-top: 10%;
   display: flex;
   align-items: center;
   justify-content: center;
 `;
 
 const ABtn = styled(BaseButton)`
-  width: 16vw;
-  height: 16vw;
+  width: 75px;
+  height: 75px;
   border-radius: 50%;
   margin-left: auto;
   margin-right: 4vw;
@@ -193,9 +199,8 @@ const BBtn = styled(ABtn)`
   margin-right: 30%;
 `;
 
-const StyledFlexBox = styled(FlexBox)<{ m: number }>`
-  margin-top: ${(props) => props.m}px;
-  margin-bottom: 0;
+const StyledFlexBox = styled(FlexBox)`
+  margin: 32px auto;
 `;
 
 const StyledInput = styled.input`
